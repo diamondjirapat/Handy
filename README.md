@@ -1,3 +1,11 @@
+# A Handy fork with aditional features such as transcribe from the audio recording and AI summarization
+
+Don't forget to check [Handy repository](https://github.com/handy-app/handy) for the original project
+
+Now back to the original README <3
+
+---
+
 # Handy
 
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/WVBeWsNXK4)
