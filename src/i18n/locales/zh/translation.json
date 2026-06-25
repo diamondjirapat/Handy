@@ -473,7 +473,16 @@
       "regenerateWithPrompt": "Custom prompt",
       "customPromptTitle": "Regenerate with custom prompt",
       "customPromptPlaceholder": "e.g. Summarize as bullet points, Extract action items, Translate to English...",
-      "customPromptSubmit": "Generate"
+      "customPromptSubmit": "Generate",
+      "askTranscript": "Ask",
+      "askTranscriptTitle": "Ask about this transcript",
+      "askTranscriptPlaceholder": "Ask anything about this transcript...",
+      "askTranscriptSend": "Ask",
+      "askTranscriptThinking": "Thinking...",
+      "askTranscriptError": "Failed to get an answer. Please check your AI Summarization settings.",
+      "askTranscriptCopyAnswer": "Copy answer",
+      "askTranscriptCopied": "Answer copied to clipboard",
+      "askTranscriptClearChat": "Clear chat"
     },
     "debug": {
       "title": "调试",

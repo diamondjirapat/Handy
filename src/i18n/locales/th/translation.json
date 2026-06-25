@@ -1,0 +1,708 @@
+{
+  "dragDrop": {
+    "dragOver": "วางไฟล์เสียงเพื่อถอดเสียง",
+    "supportedFormats": "รองรับ WAV, MP3, M4A, AAC, FLAC, OGG"
+  },
+  "tray": {
+    "settings": "การตั้งค่า...",
+    "checkUpdates": "ตรวจสอบการอัปเดต...",
+    "copyLastTranscript": "คัดลอกการถอดเสียงล่าสุด",
+    "unloadModel": "ปลดโหลดโมเดล",
+    "model": "โมเดล",
+    "quit": "ออกจากโปรแกรม",
+    "cancel": "ยกเลิก"
+  },
+  "sidebar": {
+    "general": "ทั่วไป",
+    "models": "โมเดล",
+    "advanced": "ขั้นสูง",
+    "postProcessing": "ประมวลผลหลัง",
+    "history": "ประวัติ",
+    "summary": "สรุปโดย AI",
+    "debug": "แก้ไขข้อบกพร่อง",
+    "about": "เกี่ยวกับ"
+  },
+  "onboarding": {
+    "subtitle": "ในการเริ่มต้น ให้เลือกโมเดลการถอดเสียง",
+    "recommended": "แนะนำ",
+    "download": "ดาวน์โหลด",
+    "downloading": "กำลังดาวน์โหลด...",
+    "customModelDescription": "ไม่รองรับอย่างเป็นทางการ",
+    "downloadFailed": "การดาวน์โหลดล้มเหลว โปรดลองอีกครั้ง",
+    "modelCard": {
+      "accuracy": "ความแม่นยำ",
+      "speed": "ความเร็ว"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "เร็วและค่อนข้างแม่นยำ"
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "ความแม่นยำดี ความเร็วปานกลาง"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "สมดุลระหว่างความแม่นยำและความเร็ว"
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "ความแม่นยำดี แต่ช้า"
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "ภาษาอังกฤษเท่านั้น โมเดลที่ดีที่สุดสำหรับผู้พูดภาษาอังกฤษ"
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "รวดเร็วและแม่นยำ"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "รวดเร็วมาก ภาษาอังกฤษเท่านั้น รองรับสำเนียงได้ดี"
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "เร็วสูงสุด ภาษาอังกฤษเท่านั้น"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "รวดเร็ว ภาษาอังกฤษเท่านั้น สมดุลระหว่างความเร็วและความแม่นยำ"
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "ภาษาอังกฤษเท่านั้น คุณภาพสูง"
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "ปรับแต่งสำหรับภาษาจีนไต้หวัน รองรับโค้ดสวิตชิง"
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "รวดเร็วมาก ภาษาจีน ภาษาอังกฤษ ญี่ปุ่น เกาหลี กวางตุ้ง"
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "การรู้จำเสียงพูดรัสเซีย รวดเร็วและแม่นยำ"
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "รวดเร็วมาก ภาษาอังกฤษ เยอรมัน สเปน ฝรั่งเศส รองรับการทำงานแปล"
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "หลายภาษาที่แม่นยำ 25 ภาษายุโรป รองรับการทำงานแปล"
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "โมเดลขนาดใหญ่ ช้าแต่แม่นยำสูงหลายภาษา"
+      }
+    },
+    "errors": {
+      "loadModels": "ไม่สามารถโหลดโมเดลที่มีได้",
+      "downloadModel": "ดาวน์โหลดโมเดลล้มเหลว: {{error}}"
+    },
+    "permissions": {
+      "title": "ต้องการสิทธิ์",
+      "description": "Handy ต้องการสิทธิ์บางประการเพื่อให้ทำงานได้ถูกต้อง",
+      "microphone": {
+        "title": "การเข้าถึงไมโครโฟน",
+        "description": "จำเป็นเพื่อรับเสียงของคุณสำหรับการถอดเสียง"
+      },
+      "accessibility": {
+        "title": "การเข้าถึงความสามารถในการใช้งาน",
+        "description": "จำเป็นเพื่อพิมพ์ข้อความที่ถอดเสียงลงในแอปพลิเคชันของคุณ"
+      },
+      "grant": "ให้สิทธิ์",
+      "granted": "ให้สิทธิ์แล้ว",
+      "waiting": "กำลังรอ...",
+      "allGranted": "พร้อมแล้ว!",
+      "errors": {
+        "checkFailed": "ไม่สามารถตรวจสอบสิทธิ์ได้ โปรดลองอีกครั้ง",
+        "requestFailed": "ไม่สามารถขอสิทธิ์ได้ โปรดลองอีกครั้ง"
+      }
+    }
+  },
+  "modelSelector": {
+    "custom": "กำหนดเอง",
+    "active": "ใช้งานอยู่",
+    "switching": "กำลังสลับ...",
+    "noModelsAvailable": "ไม่มีโมเดลที่ใช้งานได้",
+    "verifying": "กำลังตรวจสอบ {{modelName}}...",
+    "verifyingGeneric": "กำลังตรวจสอบ...",
+    "extracting": "กำลังแยก {{modelName}}...",
+    "extractingMultiple": "กำลังแยกโมเดล {{count}} ตัว...",
+    "extractingGeneric": "กำลังแยก...",
+    "downloading": "กำลังดาวน์โหลด {{percentage}}%",
+    "downloadingMultiple": "กำลังดาวน์โหลดโมเดล {{count}} ตัว...",
+    "modelReady": "โมเดลพร้อมใช้งาน",
+    "loading": "กำลังโหลด {{modelName}}...",
+    "loadingGeneric": "กำลังโหลด...",
+    "modelError": "ข้อผิดพลาดของโมเดล",
+    "modelUnloaded": "ปลดโหลดโมเดลแล้ว",
+    "noModelDownloadRequired": "ไม่มีโมเดล - ต้องดาวน์โหลด",
+    "deleteModel": "ลบ {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "cancel": "ยกเลิก",
+    "cancelDownload": "ยกเลิกการดาวน์โหลด",
+    "capabilities": {
+      "languageSelection": "รองรับหลายภาษา",
+      "singleLanguage": "รองรับภาษานี้เท่านั้น",
+      "multiLanguage": "หลายภาษา",
+      "languageOnly": "{{language}} เท่านั้น",
+      "translation": "สามารถแปลเป็นภาษาอังกฤษได้",
+      "translate": "แปลเป็นภาษาอังกฤษ"
+    }
+  },
+  "settings": {
+    "modelSettings": {
+      "title": "การตั้งค่า {{model}}",
+      "noSettingsNeeded": "โมเดลนี้ทำงานอัตโนมัติโดยไม่ต้องกำหนดค่า"
+    },
+    "general": {
+      "title": "ทั่วไป",
+      "shortcut": {
+        "title": "ทางลัด Handy",
+        "description": "กำหนดทางลัดแป้นพิมพ์เพื่อเริ่มการบันทึกเสียงเพื่อถอดเสียง",
+        "loading": "กำลังโหลดทางลัด...",
+        "none": "ไม่มีทางลัดที่กำหนดค่า",
+        "notFound": "ไม่พบทางลัด",
+        "pressKeys": "กดปุ่ม...",
+        "bindings": {
+          "transcribe": {
+            "name": "ทางลัดถอดเสียง",
+            "description": "ทางลัดแป้นพิมพ์เพื่อบันทึกและถอดเสียงพูดของคุณ"
+          },
+          "cancel": {
+            "name": "ทางลัดยกเลิก",
+            "description": "ทางลัดแป้นพิมพ์เพื่อยกเลิกการบันทึกปัจจุบัน"
+          },
+          "transcribe_with_post_process": {
+            "name": "ปุ่มลัดประมวลผลหลัง",
+            "description": "ตัวเลือก: ปุ่มลัดเฉพาะที่ใช้งานประมวลผลหลัง AI معการถอดเสียงของคุณเสมอ"
+          }
+        },
+        "errors": {
+          "restore": "ไม่สามารถคืนค่าทางลัดเดิมได้",
+          "set": "ไม่สามารถตั้งค่าทางลัดได้: {{error}}",
+          "reset": "ไม่สามารถรีเซ็ตทางลัดเป็นค่าเดิมได้"
+        }
+      },
+      "language": {
+        "title": "ภาษา",
+        "description": "เลือกภาษาสำหรับการรู้จำเสียงพูด ระบบอัตโนมัติจะระบุภาษาโดยอัตโนมัติ แต่การเลือกภาษาเฉพาะอาจช่วยปรับปรุงความแม่นยำสำหรับภาษานั้น",
+        "descriptionUnsupported": "โมเดล Parakeet ตรวจจับภาษาโดยอัตโนมัติ ไม่ต้องเลือกด้วยตนเอง",
+        "searchPlaceholder": "ค้นหาภาษา...",
+        "noResults": "ไม่พบภาษา",
+        "auto": "อัตโนมัติ"
+      },
+      "pushToTalk": {
+        "label": "กดเพื่อพูด",
+        "description": "กดเพื่อบันทึก ปล่อยเพื่อหยุด"
+      }
+    },
+    "models": {
+      "title": "โมเดลถอดเสียง",
+      "description": "เลือกโมเดลถอดเสียงหรือดาวน์โหลดโมเดลเพิ่มเติม โมเดลต่างกันให้ความแม่นยำและความเร็วที่แตกต่างกัน",
+      "yourModels": "โมเดลที่ดาวน์โหลดแล้ว",
+      "availableModels": "ดาวน์โหลดได้",
+      "downloaded": "ดาวน์โหลดแล้ว",
+      "available": "ดาวน์โหลดได้",
+      "deleteConfirm": "คุณแน่ใจหรือไม่ว่าต้องการลบ {{modelName}}? คุณจะต้องดาวน์โหลดอีกครั้งเพื่อใช้งาน",
+      "deleteActiveConfirm": "{{modelName}} เป็นโมเดลที่ใช้งานอยู่ของคุณ การลบจะทำให้การถอดเสียงหยุดลงจนกว่าคุณจะเลือกโมเดลใหม่ คุณแน่ใจหรือ?",
+      "deleteTitle": "ลบโมเดล",
+      "filters": {
+        "all": "ทั้งหมด",
+        "multiLanguage": "หลายภาษา",
+        "translation": "การแปล",
+        "allLanguages": "ทุกภาษา"
+      },
+      "noModelsMatch": "ไม่มีโมเดลที่ตรงกับตัวกรองนี้"
+    },
+    "sound": {
+      "title": "เสียง",
+      "microphone": {
+        "title": "ไมโครโฟน",
+        "description": "เลือกอุปกรณ์ไมโครโฟนที่ต้องการ",
+        "placeholder": "เลือกไมโครโฟน...",
+        "loading": "กำลังโหลด..."
+      },
+      "audioFeedback": {
+        "label": "เสียงตอบสนอง",
+        "description": "เล่นเสียงเมื่อเริ่มและหยุดบันทึก"
+      },
+      "outputDevice": {
+        "title": "อุปกรณ์เอาต์พุต",
+        "description": "เลือกอุปกรณ์เอาต์พุตเสียงสำหรับเสียงตอบสนอง",
+        "placeholder": "เลือกอุปกรณ์เอาต์พุต...",
+        "loading": "กำลังโหลด..."
+      },
+      "volume": {
+        "title": "ระดับเสียง",
+        "description": "ปรับระดับเสียงของเสียงตอบสนอง"
+      }
+    },
+    "advanced": {
+      "title": "ขั้นสูง",
+      "groups": {
+        "app": "แอป",
+        "output": "เอาต์พุต",
+        "transcription": "การถอดเสียง",
+        "env": "ตัวแปรสภาพแวดล้อม",
+        "summaryApi": "API สรุป",
+        "history": "ประวัติ",
+        "experimental": "การทดลอง"
+      },
+      "env": {
+        "title": "ตัวแปรสภาพแวดล้อมกำหนดเอง",
+        "description": "กำหนดตัวแปรสภาพแวดล้อมกำหนดเอง (เช่น HTTP_PROXY=http://127.0.0.1:7890) โดยใช้รูปแบบ .env สิ่งเหล่านี้จะถูกนำไปใช้กับสภาพแวดล้อมของกระบวนการเมื่อเริ่มต้น",
+        "placeholder": "HTTP_PROXY=http://127.0.0.1:7890\nHF_ENDPOINT=https://hf-mirror.com"
+      },
+      "summaryApi": {
+        "name": {
+          "title": "ชื่อผู้ให้บริการ",
+          "description": "ป้ายกำกับกำหนดเองเพื่อระบุแบ็กเอนด์ API ที่เข้ากันได้กับ OpenAI นี้",
+          "placeholder": "LLM ในเครื่องของฉัน"
+        },
+        "baseUrl": {
+          "title": "URL ฐาน",
+          "description": "URL ฐานของจุดปลายสำหรับการขอแชทคอมพลีชัน",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "คีย์ API",
+          "description": "คีย์ API หรือโทเค็นแบร์เออร์เพื่อรับรองความถูกต้องของคำขอ สามารถเว้นว่างสำหรับจุดปลายในเครื่องได้",
+          "placeholder": "ใส่คีย์ API"
+        },
+        "model": {
+          "title": "ชื่อโมเดล",
+          "description": "ตัวระบุโมเดลที่ถูกต้อง (เช่น gpt-4o-mini, llama3) เพื่อขอ",
+          "placeholder": "gpt-4o-mini"
+        }
+      },
+      "experimentalToggle": {
+        "label": "ฟีเจอร์การทดลอง",
+        "description": "เปิดใช้งานฟีเจอร์การทดลองที่ยังอยู่ในระหว่างการพัฒนา"
+      },
+      "lazyStreamClose": {
+        "label": "เปิดไมโครโฟนระหว่างการถอดเสียง",
+        "description": "คงสตรีมไมโครโฟนเปิดไว้ 30 วินาทีหลังจากหยุดบันทึก ลดเวลาแฝงสำหรับการถอดเสียงต่อเนื่อง อาจลดคุณภาพเสียงบลูทูธขณะใช้งาน"
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "การเร่งความเร็ว Whisper",
+          "description": "การเร่งความเร็วฮาร์ดแวร์สำหรับโมเดล Whisper อัตโนมัติจะใช้ GPU หากมี (Metal บน macOS, Vulkan บน Windows/Linux)"
+        },
+        "ort": {
+          "title": "การเร่งความเร็ว ONNX",
+          "description": "การเร่งความเร็วฮาร์ดแวร์สำหรับโมเดล ONNX (Parakeet, Canary, Moonshine ฯลฯ) DirectML บน Windows เป็นการทดลอง โมเดลอาจถอดเสียงไม่สำเร็จ"
+        },
+        "gpuDevice": {
+          "title": "อุปกรณ์ GPU",
+          "description": "เลือก GPU ที่ใช้สำหรับการอนุมาน Whisper อัตโนมัติจะเลือก GPU เฉพาะ",
+          "auto": "อัตโนมัติ"
+        }
+      },
+      "startHidden": {
+        "label": "เริ่มซ่อน",
+        "description": "เปิดไปที่แถบสถานะโดยไม่เปิดหน้าต่าง"
+      },
+      "autostart": {
+        "label": "เปิดเมื่อเริ่มต้นระบบ",
+        "description": "เปิด Handy อัตโนมัติเมื่อคุณเข้าสู่ระบบคอมพิวเตอร์"
+      },
+      "showTrayIcon": {
+        "label": "แสดงไอคอนถาด",
+        "description": "แสดงไอคอน Handy ในแถบสถานะระบบ"
+      },
+      "overlay": {
+        "title": "ตำแหน่งโอเวอร์เลย์",
+        "description": "แสดงโอเวอร์เลย์ตอบรับภาพระหว่างการบันทึกและถอดเสียง บน Linux แนะนำให้ใช้ 'ไม่มี'",
+        "options": {
+          "none": "ไม่มี",
+          "bottom": "ด้านล่าง",
+          "top": "ด้านบน"
+        }
+      },
+      "pasteMethod": {
+        "title": "วิธีวาง",
+        "description": "เลือกวิธีการแทรกข้อความ โดยตรง: จำลองการพิมพ์ผ่านการป้อนระบบ ไม่มี: ข้ามการวาง อัปเดตเฉพาะประวัติ/คลิปบอร์ด",
+        "options": {
+          "clipboard": "คลิปบอร์ด ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "คลิปบอร์ด (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "คลิปบอร์ด (Shift+Insert)",
+          "direct": "โดยตรง",
+          "none": "ไม่มี",
+          "externalScript": "สคริปต์ภายนอก"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
+      },
+      "typingTool": {
+        "title": "เครื่องมือพิมพ์",
+        "description": "เลือกเครื่องมือพิมพ์ Linux สำหรับวิธีการวางโดยตรง อัตโนมัติจะตรวจจับและใช้เครื่องมือที่ดีที่สุดสำหรับระบบของคุณโดยอัตโนมัติ",
+        "options": {
+          "auto": "อัตโนมัติ (แนะนำ)"
+        }
+      },
+      "clipboardHandling": {
+        "title": "การจัดการคลิปบอร์ด",
+        "description": "อย่าแก้ไขคลิปบอร์ดจะคงเนื้อหาคลิปบอร์ดปัจจุบันไว้หลังการถอดเสียง คัดลอกไปยังคลิปบอร์ดจะทิ้งผลการถอดเสียงในคลิปบอร์ดของคุณหลังจากวาง",
+        "options": {
+          "dontModify": "อย่าแก้ไขคลิปบอร์ด",
+          "copyToClipboard": "คัดลอกไปยังคลิปบอร์ด"
+        }
+      },
+      "autoSubmit": {
+        "title": "ส่งอัตโนมัติ",
+        "description": "ส่งชุดปุ่มที่เลือกอัตโนมัติหลังจากแทรกข้อความ Cmd+Enter ใช้บน macOS ในขณะที่ Windows/Linux ใช้ Super+Enter",
+        "options": {
+          "off": "ปิด",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
+      "translateToEnglish": {
+        "label": "แปลเป็นภาษาอังกฤษ",
+        "description": "แปลเสียงจากภาษาอื่นเป็นภาษาอังกฤษอัตโนมัติระหว่างการถอดเสียง",
+        "descriptionUnsupported": "การแปลไม่รองรับโดยโมเดล {{model}}"
+      },
+      "modelUnload": {
+        "title": "ปลดโหลดโมเดล",
+        "description": "ปล่อยหน่วยความจำ GPU/CPU อัตโนมัติเมื่อโมเดลไม่ได้ใช้งานเป็นเวลาตามที่ระบุ",
+        "options": {
+          "never": "ไม่เลย",
+          "immediately": "ทันที",
+          "min2": "หลังจาก 2 นาที",
+          "min5": "หลังจาก 5 นาที",
+          "min10": "หลังจาก 10 นาที",
+          "min15": "หลังจาก 15 นาที",
+          "hour1": "หลังจาก 1 ชั่วโมง",
+          "sec15": "หลังจาก 15 วินาที (แก้ไขข้อบกพร่อง)"
+        }
+      },
+      "customWords": {
+        "title": "คำที่กำหนดเอง",
+        "description": "เพิ่มคำที่มักฟังผิดหรือพิมพ์ผิดระหว่างการถอดเสียง ระบบจะแก้ไขคำที่ออกเสียงคล้ายกันโดยอัตโนมัติให้ตรงกับรายการของคุณ",
+        "placeholder": "เพิ่มคำ",
+        "add": "เพิ่ม",
+        "remove": "ลบ {{word}}",
+        "duplicate": "\"{{word}}\" มีอยู่แล้ว"
+      }
+    },
+    "postProcessing": {
+      "title": "ประมวลผลหลัง",
+      "hotkey": {
+        "title": "ปุ่มลัด"
+      },
+      "api": {
+        "title": "API (เข้ากันได้กับ OpenAI)",
+        "provider": {
+          "title": "ผู้ให้บริการ",
+          "description": "เลือกผู้ให้บริการที่เข้ากันได้กับ OpenAI"
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "ทำงานในเครื่องทั้งหมด ไม่ต้องใช้คีย์ API หรือการเข้าถึงเครือข่าย",
+          "requirements": "ต้องการ Mac Apple Silicon ที่รัน macOS Tahoe (26.0) ขึ้นไป ต้องเปิดใช้งาน Apple Intelligence ในการตั้งค่าระบบ",
+          "unavailable": "Apple Intelligence ไม่พร้อมใช้งานบนอุปกรณ์นี้ ต้องการ Mac Apple Silicon ที่รัน macOS Tahoe (26.0) ขึ้นไปพร้อมเปิดใช้งาน Apple Intelligence ในการตั้งค่าระบบ"
+        },
+        "baseUrl": {
+          "title": "URL ฐาน",
+          "description": "URL ฐาน API สำหรับผู้ให้บริการที่เลือก มีเฉพาะผู้ให้บริการกำหนดเองที่แก้ไขได้",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "คีย์ API",
+          "description": "คีย์ API สำหรับผู้ให้บริการที่เลือก",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "โมเดล",
+          "descriptionApple": "ระบุขีดจำกัดโทเค็นตัวเลขแบบไม่บังคับหรือใช้ค่ากำหนดล่วงหน้าในเครื่อง",
+          "descriptionCustom": "ระบุตัวระบุโมเดลที่จุดปลายกำหนดเองคาดหวัง",
+          "descriptionDefault": "เลือกโมเดลที่เปิดเผยโดยผู้ให้บริการที่เลือก",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderWithOptions": "ค้นหาหรือเลือกโมเดล",
+          "placeholderNoOptions": "พิมพ์ชื่อโมเดล",
+          "refreshModels": "รีเฟรชโมเดล"
+        }
+      },
+      "prompts": {
+        "title": "พรอมต์",
+        "selectedPrompt": {
+          "title": "พรอมต์ที่เลือก",
+          "description": "เลือกเทมเพลตเพื่อปรับปรุงการถอดเสียงหรือสร้างใหม่ ใช้ ${output} ภายในข้อความพรอมต์เพื่ออ้างอิงการถอดเสียงที่captured"
+        },
+        "noPrompts": "ไม่มีพรอมต์ที่ใช้งานได้",
+        "selectPrompt": "เลือกพรอมต์",
+        "createNew": "สร้างพรอมต์ใหม่",
+        "promptLabel": "ป้ายกำกับพรอมต์",
+        "promptLabelPlaceholder": "พิมพ์ชื่อพรอมต์",
+        "promptInstructions": "คำแนะนำพรอมต์",
+        "promptInstructionsPlaceholder": "เขียนคำแนะนำที่จะดำเนินการหลังการถอดเสียง ตัวอย่าง: ปรับปรุงไวยากรณ์และความชัดเจนสำหรับข้อความต่อไปนี้: ${output}",
+        "promptTip": "เคล็ดลับ: ใช้ <code>${output}</code> เพื่อแทรกข้อความที่ถอดเสียงในพรอมต์ของคุณ",
+        "updatePrompt": "อัปเดตพรอมต์",
+        "deletePrompt": "ลบพรอมต์",
+        "createPrompt": "สร้างพรอมต์",
+        "cancel": "ยกเลิก",
+        "selectToEdit": "เลือกพรอมต์ด้านบนเพื่อดูและแก้ไขรายละเอียด",
+        "createFirst": "คลิก 'สร้างพรอมต์ใหม่' ด้านบนเพื่อสร้างพรอมต์ประมวลผลหลังครั้งแรกของคุณ"
+      }
+    },
+    "history": {
+      "title": "ประวัติ",
+      "openFolder": "เปิดโฟลเดอร์การบันทึก",
+      "loading": "กำลังโหลดประวัติ...",
+      "empty": "ยังไม่มีการถอดเสียง เริ่มบันทึกเพื่อสร้างประวัติของคุณ!",
+      "copyToClipboard": "คัดลอกการถอดเสียงไปยังคลิปบอร์ด",
+      "save": "บันทึกการถอดเสียง",
+      "unsave": "ลบออกจากรายการที่บันทึก",
+      "delete": "ลบรายการ",
+      "deleteError": "ไม่สามารถลบรายการได้ โปรดลองอีกครั้ง",
+      "retranscribe": "ถอดเสียงใหม่",
+      "retranscribeError": "การถอดเสียงใหม่ล้มเหลว โปรดลองอีกครั้ง",
+      "transcribing": "กำลังถอดเสียง...",
+      "transcriptionFailed": "การถอดเสียงล้มเหลว คุณสามารถถอดเสียงใหม่โดยใช้ไอคอนลองใหม่",
+      "summarize": "สรุปการถอดเสียง",
+      "summaryTitle": "สรุป",
+      "summarizing": "กำลังสรุปการถอดเสียง...",
+      "copySummary": "คัดลอกสรุป",
+      "summaryCopied": "คัดลอกสรุปไปยังคลิปบอร์ดแล้ว",
+      "summaryError": "ไม่สามารถสร้างสรุปได้ โปรดตรวจสอบการตั้งค่าสรุป AI ของคุณ",
+      "noSummary": "ไม่มีการสร้างสรุป",
+      "regenerateSummary": "สร้างสรุปใหม่",
+      "regenerateWithPrompt": "พรอมต์กำหนดเอง",
+      "customPromptTitle": "สร้างใหม่ด้วยพรอมต์กำหนดเอง",
+      "customPromptPlaceholder": "เช่น สรุปเป็นรายการจุด สกัดรายการสิ่งที่ต้องทำ แปลเป็นภาษาอังกฤษ...",
+      "customPromptSubmit": "สร้าง",
+      "askTranscript": "Ask",
+      "askTranscriptTitle": "Ask about this transcript",
+      "askTranscriptPlaceholder": "Ask anything about this transcript...",
+      "askTranscriptSend": "Ask",
+      "askTranscriptThinking": "Thinking...",
+      "askTranscriptError": "Failed to get an answer. Please check your AI Summarization settings.",
+      "askTranscriptCopyAnswer": "Copy answer",
+      "askTranscriptCopied": "Answer copied to clipboard",
+      "askTranscriptClearChat": "Clear chat"
+    },
+    "summaryApi": {
+      "title": "การตั้งค่าสรุป AI",
+      "prompt": {
+        "group": "เทมเพลตพรอมต์สรุป",
+        "title": "พรอมต์สรุปกำหนดเอง",
+        "description": "ปรับแต่งพรอมต์หรือคำแนะนำระบบที่ใช้สรุปการถอดเสียงของคุณ หากเว้นว่างจะใช้ค่าเริ่มต้น: 'โปรดให้สรุปข้อความต่อไปนี้โดยย่อ:'",
+        "placeholder": "เช่น โปรดสรุปจุดสำคัญที่สามารถดำเนินการได้และรายการจุดสำคัญ:"
+      },
+      "test": {
+        "button": "ทดสอบการเชื่อมต่อ API",
+        "buttonTesting": "กำลังทดสอบการเชื่อมต่อ...",
+        "noBaseUrl": "ไม่ได้กำหนดค่า URL ฐาน API สรุป โปรดตั้งค่าก่อน",
+        "loading": "กำลังทดสอบการเชื่อมต่อกับ API สรุป...",
+        "success": "การเชื่อมต่อสำเร็จ! การตอบกลับ LLM: '{{response}}'",
+        "error": "การทดสอบการเชื่อมต่อล้มเหลว: {{error}}"
+      }
+    },
+    "debug": {
+      "title": "แก้ไขข้อบกพร่อง",
+      "logDirectory": {
+        "title": "ไดเรกทอรีบันทึก",
+        "description": "ตำแหน่งที่เก็บไฟล์บันทึก"
+      },
+      "logLevel": {
+        "title": "ระดับบันทึก",
+        "description": "ตั้งค่าความละเอียดของการบันทึก"
+      },
+      "liveLogs": {
+        "title": "บันทึกสด",
+        "description": "สตรีมบันทึกแอปพลิเคชันแบบเรียลไทม์เพื่อวินิจฉัยปัญหาโดยไม่เปิดไฟล์บันทึก แสดงเฉพาะบันทึกที่ปล่อยออกมาขณะที่เปิดแผงนี้เท่านั้น; เคารพการตั้งค่าระดับบันทึกด้านบน",
+        "live": "สด",
+        "paused": "หยุดชั่วคราว",
+        "pause": "หยุดชั่วคราว",
+        "resume": "ดำเนินการต่อ",
+        "copied": "คัดลอกแล้ว",
+        "lineCount": "{{count}} บรรทัด",
+        "empty": "กำลังรอบันทึก... รายการจะปรากฏที่นี่เมื่อแอปปล่อยออกมา"
+      },
+      "updateChecks": {
+        "label": "ตรวจสอบการอัปเดต",
+        "description": "ตรวจสอบเวอร์ชันใหม่ของ Handy โดยอัตโนมัติ"
+      },
+      "soundTheme": {
+        "label": "ธีมเสียง",
+        "description": "เลือกธีมเสียงสำหรับตอบรับเริ่มและหยุดบันทึก"
+      },
+      "wordCorrectionThreshold": {
+        "title": "ขีดจำกัดการแก้ไขคำ",
+        "description": "ความไวสำหรับการแก้ไขคำกำหนดเอง"
+      },
+      "historyLimit": {
+        "title": "ขีดจำกัดประวัติ",
+        "description": "จำนวนรายการประวัติสูงสุดที่จะเก็บ",
+        "entries": "รายการ"
+      },
+      "recordingRetention": {
+        "title": "ลบการบันทึกอัตโนมัติ",
+        "description": "ลบการบันทึกเก่าอัตโนมัติเพื่อประหยัดพื้นที่",
+        "never": "ไม่เลย",
+        "preserveLimit": "เก็บล่าสุด {{count}}",
+        "days3": "หลังจาก 3 วัน",
+        "weeks2": "หลังจาก 2 สัปดาห์",
+        "months3": "หลังจาก 3 เดือน",
+        "placeholder": "เลือกช่วงเวลาการเก็บ..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "ไมโครโฟนเปิดตลอดเวลา",
+        "description": "คงไมโครโฟนให้อยู่ในสถานะใช้งานเพื่อตอบสนองที่เร็วขึ้น"
+      },
+      "clamshellMicrophone": {
+        "title": "ไมโครโฟนclamshell",
+        "description": "ไมโครโฟนที่จะใช้เมื่อฝาแล็ปท็อปปิด"
+      },
+      "postProcessingToggle": {
+        "label": "ประมวลผลหลัง",
+        "description": "เปิดใช้งานการปรับปรุงข้อความด้วย AI หลังการถอดเสียง"
+      },
+      "muteWhileRecording": {
+        "label": "ปิดเสียงขณะบันทึก",
+        "description": "ปิดเสียงระบบระหว่างบันทึก"
+      },
+      "appendTrailingSpace": {
+        "label": "เพิ่มช่องว่างท้าย",
+        "description": "เพิ่มช่องว่างหลังการถอดเสียงที่วาง"
+      },
+      "keyboardImplementation": {
+        "title": "การดำเนินการแป้นพิมพ์",
+        "description": "เลือกแบ็กเอนด์ทางลัดแป้นพิมพ์",
+        "bindingsReset": "ทางลัดแป้นพิมพ์ไม่เข้ากันได้และรีเซ็ตเป็นค่าเริ่มต้น"
+      },
+      "paths": {
+        "appData": "ข้อมูลแอป:",
+        "models": "โมเดล:",
+        "settings": "การตั้งค่า:"
+      },
+      "pasteDelay": {
+        "title": "การหน่วงเวลาการวาง",
+        "description": "การหน่วงเวลาก่อนส่งปุ่มวาง (เป็นมิลลิวินาที) เพิ่มหากวางข้อความผิด"
+      },
+      "recordingBuffer": {
+        "title": "บัฟเฟอร์การบันทึกเพิ่มเติม",
+        "description": "เวลาเพิ่มเติม (เป็นมิลลิวินาที) เพื่อคงการบันทึกหลังจากปล่อยปุ่ม เพื่อจับเสียงท้าย 0 = ไม่มีบัฟเฟอร์เพิ่มเติม"
+      }
+    },
+    "about": {
+      "title": "เกี่ยวกับ",
+      "version": {
+        "title": "เวอร์ชัน",
+        "description": "เวอร์ชันปัจจุบันของ Handy"
+      },
+      "appDataDirectory": {
+        "title": "ไดเรกทอรีข้อมูลแอป",
+        "description": "ตำแหน่งที่ Handy เก็บข้อมูล"
+      },
+      "sourceCode": {
+        "title": "ซอร์สโค้ด",
+        "description": "ดูซอร์สโค้ดและมีส่วนร่วม",
+        "button": "ดูบน GitHub"
+      },
+      "supportDevelopment": {
+        "title": "สนับสนุนการพัฒนา",
+        "description": "ช่วยเราสร้าง Handy ต่อไป",
+        "button": "บริจาค"
+      },
+      "acknowledgments": {
+        "title": "คำขอบคุณ",
+        "whisper": {
+          "title": "Whisper.cpp",
+          "description": "การอนุมานประสิทธิภาพสูงของโมเดลรู้จำเสียงพูดอัตโนมัติ Whisper ของ OpenAI",
+          "details": "Handy ใช้ Whisper.cpp สำหรับการประมวลผลเสียงเป็นข้อความแบบท้องถิ่นที่รวดเร็ว ขอบคุณสำหรับงานที่ยอดเยี่ยมโดย Georgi Gerganov และผู้ร่วมพัฒนา"
+        }
+      }
+    }
+  },
+  "footer": {
+    "downloadingModel": "กำลังดาวน์โหลด {{model}}...",
+    "checkingUpdates": "กำลังตรวจสอบการอัปเดต...",
+    "updateAvailable": "มีการอัปเดต: {{version}}",
+    "updateAvailableShort": "มีการอัปเดต",
+    "upToDate": "เป็นปัจจุบัน",
+    "downloadUpdate": "ดาวน์โหลดการอัปเดต",
+    "restart": "รีสตาร์ท",
+    "updateCheckingDisabled": "การตรวจสอบการอัปเดตถูกปิดใช้งาน",
+    "downloading": "กำลังดาวน์โหลด... {{progress}}%",
+    "installing": "กำลังติดตั้ง...",
+    "preparing": "กำลังเตรียม...",
+    "checkForUpdates": "ตรวจสอบการอัปเดต",
+    "portableUpdateTitle": "ต้องอัปเดตด้วยตนเอง",
+    "portableUpdateMessage": "การติดตั้งแบบพอร์ตเทเบิลไม่สามารถอัปเดตอัตโนมัติได้ ในการอัปเดต: ดาวน์โหลดตัวติดตั้ง NSIS ล่าสุดจาก GitHub Releases ติดตั้งลงในโฟลเดอร์เดียวกัน แล้วคัดลอกโฟลเดอร์ Data/ (การตั้งค่า โมเดล การบันทึก) จากเวอร์ชันเก่าไปยังเวอร์ชันใหม่",
+    "portableUpdateButton": "เปิด GitHub Releases",
+    "uploadAudio": "อัปโหลดเสียง",
+    "uploadAudioTitle": "อัปโหลดไฟล์เสียงเพื่อถอดเสียง",
+    "uploadAudioDialogTitle": "เลือกไฟล์เสียง",
+    "uploading": "กำลังถอดเสียง...",
+    "uploadAudioSuccess": "การถอดเสียงเสร็จสมบูรณ์",
+    "uploadAudioError": "การอัปโหลดล้มเหลว",
+    "record": "บันทึก",
+    "transcribe": "ถอดเสียง",
+    "cancel": "ยกเลิก",
+    "recording": "กำลังบันทึก...",
+    "transcribeFile": "ถอดเสียงไฟล์"
+  },
+  "common": {
+    "loading": "กำลังโหลด...",
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "reset": "รีเซ็ต",
+    "add": "เพิ่ม",
+    "remove": "ลบ",
+    "delete": "ลบ",
+    "edit": "แก้ไข",
+    "create": "สร้าง",
+    "update": "อัปเดต",
+    "close": "ปิด",
+    "open": "เปิด",
+    "copy": "คัดลอก",
+    "clear": "ล้าง",
+    "default": "ค่าเริ่มต้น",
+    "enabled": "เปิดใช้งาน",
+    "disabled": "ปิดใช้งาน",
+    "on": "เปิด",
+    "off": "ปิด",
+    "yes": "ใช่",
+    "no": "ไม่",
+    "noOptionsFound": "ไม่พบตัวเลือก"
+  },
+  "accessibility": {
+    "permissionsRequired": "ต้องการสิทธิ์ความสามารถในการใช้งาน",
+    "permissionsDescription": "Handy ต้องการสิทธิ์ความสามารถในการใช้งานเพื่อพิมพ์ข้อความที่ถอดเสียง",
+    "openSettings": "เปิดการตั้งค่าระบบ",
+    "dismiss": "ปิด"
+  },
+  "errors": {
+    "loadDirectory": "ข้อผิดพลาดในการโหลดไดเรกทอรี: {{error}}",
+    "micPermissionDeniedTitle": "ปฏิเสธการเข้าถึงไมโครโฟน",
+    "micPermissionDenied": {
+      "generic": "ระบบปฏิบัติการปฏิเสธการเข้าถึงไมโครโฟน โปรดให้สิทธิ์ไมโครโฟนในการตั้งค่าระบบของคุณ",
+      "windows": "เปิดการเข้าถึงไมโครโฟนในการตั้งค่า → ความปลอดภัยและความเป็นส่วนตัว → ไมโครโฟน (รวมถึงการเข้าถึงแอปเดสก์ท็อป)",
+      "macos": "ให้การเข้าถึงไมโครโฟนในการตั้งค่าระบบ → ความปลอดภัยและความเป็นส่วนตัว → ไมโครโฟน",
+      "linux": "ให้การเข้าถึงไมโครโฟนในการตั้งค่าเสียงหรือความเป็นส่วนตัวของระบบ"
+    },
+    "noInputDeviceTitle": "ไม่พบไมโครโฟน",
+    "noInputDevice": "ไม่พบอุปกรณ์เอาต์พุตเสียง โปรดเชื่อมต่อไมโครโฟนหรือหูฟังแล้วลองอีกครั้ง",
+    "recordingFailed": "ไม่สามารถเริ่มบันทึกได้: {{error}}",
+    "modelLoadFailed": "ไม่สามารถโหลดโมเดลได้: {{model}}",
+    "modelLoadFailedUnknown": "โมเดลไม่รู้จัก",
+    "pasteFailedTitle": "วางข้อความล้มเหลว",
+    "pasteFailed": "ไม่สามารถวางข้อความลงในแอปพลิเคชันที่ใช้งานอยู่ได้"
+  },
+  "appLanguage": {
+    "title": "ภาษาแอปพลิเคชัน",
+    "description": "เปลี่ยนภาษาของอินเทอร์เฟซ Handy"
+  },
+  "overlay": {
+    "transcribing": "กำลังถอดเสียง...",
+    "processing": "กำลังประมวลผล..."
+  }
+}
