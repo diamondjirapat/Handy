@@ -313,6 +313,7 @@ function App() {
     >
       <Toaster
         theme="system"
+        offset={60}
         toastOptions={{
           unstyled: true,
           classNames: {

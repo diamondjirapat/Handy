@@ -468,7 +468,12 @@
       "copySummary": "Copy summary",
       "summaryCopied": "Summary copied to clipboard",
       "summaryError": "Failed to generate summary. Please check your Post-Processing API settings.",
-      "noSummary": "No summary generated"
+      "noSummary": "No summary generated",
+      "regenerateSummary": "Regenerate summary",
+      "regenerateWithPrompt": "Custom prompt",
+      "customPromptTitle": "Regenerate with custom prompt",
+      "customPromptPlaceholder": "e.g. Summarize as bullet points, Extract action items, Translate to English...",
+      "customPromptSubmit": "Generate"
     },
     "debug": {
       "title": "디버그",

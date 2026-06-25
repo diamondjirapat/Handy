@@ -5,7 +5,9 @@ import {
   Check,
   Copy,
   FolderOpen,
+  Pencil,
   RotateCcw,
+  Send,
   Star,
   Trash2,
   Sparkles,
@@ -86,6 +88,8 @@ export const HistorySettings: React.FC = () => {
   const [summaryText, setSummaryText] = useState<string | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768);
+  const [showCustomPromptModal, setShowCustomPromptModal] = useState(false);
+  const [customPromptInput, setCustomPromptInput] = useState("");
 
   useEffect(() => {
     const handleResize = () => {
@@ -272,15 +276,31 @@ export const HistorySettings: React.FC = () => {
     }
 
     setActiveSummaryEntry(entry);
+
+    // If summary is already saved in the database, use it directly
+    if (entry.summary_text && entry.summary_text.trim()) {
+      setSummaryText(entry.summary_text);
+      setIsSummarizing(false);
+      return;
+    }
+
     setSummaryText(null);
     setIsSummarizing(true);
 
     try {
       const result = await commands.summarizeTranscription(
-        entry.transcription_text,
+        entry.id,
+        false,
+        null,
       );
       if (result.status === "ok") {
         setSummaryText(result.data);
+        // Update the summary text of the entry in our local list immediately
+        setEntries((prev) =>
+          prev.map((e) =>
+            e.id === entry.id ? { ...e, summary_text: result.data } : e,
+          ),
+        );
       } else {
         toast.error(t("settings.history.summaryError"), {
           description: String(result.error),
@@ -289,6 +309,82 @@ export const HistorySettings: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Failed to summarize:", error);
+      toast.error(t("settings.history.summaryError"), {
+        description: error?.message || String(error),
+      });
+      setActiveSummaryEntry(null);
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const handleRegenerateSummary = async (entry: HistoryEntry) => {
+    setActiveSummaryEntry(entry);
+    setSummaryText(null);
+    setIsSummarizing(true);
+
+    try {
+      const result = await commands.summarizeTranscription(
+        entry.id,
+        true,
+        null,
+      );
+      if (result.status === "ok") {
+        setSummaryText(result.data);
+        // Update the summary text of the entry in our local list immediately
+        setEntries((prev) =>
+          prev.map((e) =>
+            e.id === entry.id ? { ...e, summary_text: result.data } : e,
+          ),
+        );
+      } else {
+        toast.error(t("settings.history.summaryError"), {
+          description: String(result.error),
+        });
+        setActiveSummaryEntry(null);
+      }
+    } catch (error: any) {
+      console.error("Failed to regenerate summary:", error);
+      toast.error(t("settings.history.summaryError"), {
+        description: error?.message || String(error),
+      });
+      setActiveSummaryEntry(null);
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const handleRegenerateWithCustomPrompt = async (
+    entry: HistoryEntry,
+    prompt: string,
+  ) => {
+    setActiveSummaryEntry(entry);
+    setSummaryText(null);
+    setIsSummarizing(true);
+    setShowCustomPromptModal(false);
+    setCustomPromptInput("");
+
+    try {
+      const result = await commands.summarizeTranscription(
+        entry.id,
+        true,
+        prompt,
+      );
+      if (result.status === "ok") {
+        setSummaryText(result.data);
+        setEntries((prev) =>
+          prev.map((e) =>
+            e.id === entry.id ? { ...e, summary_text: result.data } : e,
+          ),
+        );
+      } else {
+        toast.error(t("settings.history.summaryError"), {
+          description: String(result.error),
+        });
+        setActiveSummaryEntry(null);
+      }
+    } catch (error: any) {
+      console.error("Failed to regenerate summary with custom prompt:", error);
       toast.error(t("settings.history.summaryError"), {
         description: error?.message || String(error),
       });
@@ -323,6 +419,10 @@ export const HistorySettings: React.FC = () => {
               onToggleSaved={() => toggleSaved(entry.id)}
               onCopyText={() => copyToClipboard(entry.transcription_text)}
               onShowSummary={() => handleShowSummary(entry)}
+              onRegenerateSummary={() => handleRegenerateSummary(entry)}
+              onRegenerateWithCustomPrompt={(prompt) =>
+                handleRegenerateWithCustomPrompt(entry, prompt)
+              }
               isSummaryActive={activeSummaryEntry?.id === entry.id}
               isSummarizingThis={
                 isSummarizing && activeSummaryEntry?.id === entry.id
@@ -344,11 +444,13 @@ export const HistorySettings: React.FC = () => {
   }
 
   return (
-    <div className="w-full flex flex-col md:flex-row gap-6 items-start max-w-5xl mx-auto">
+    <div
+      className={`w-full flex flex-col md:flex-row gap-6 items-start transition-all duration-300 ${
+        activeSummaryEntry && isLargeScreen ? "max-w-7xl" : "max-w-3xl"
+      } mx-auto`}
+    >
       {/* Left side: History list */}
-      <div
-        className={`transition-all duration-300 ${activeSummaryEntry && isLargeScreen ? "flex-1 max-w-xl w-full" : "max-w-3xl w-full mx-auto"} space-y-6`}
-      >
+      <div className="transition-all duration-300 max-w-3xl w-full flex-shrink-0 space-y-6">
         <div className="space-y-2">
           <div className="px-4 flex items-center justify-between">
             <div>
@@ -369,7 +471,7 @@ export const HistorySettings: React.FC = () => {
 
       {/* Right side: AI Summary panel */}
       {activeSummaryEntry && isLargeScreen && (
-        <div className="w-full md:w-80 lg:w-96 bg-background border border-mid-gray/20 rounded-lg p-4 sticky top-4 flex flex-col gap-4 animate-in slide-in-from-right duration-300">
+        <div className="w-full md:w-80 lg:w-96 flex-shrink-0 max-h-[calc(100vh-120px)] bg-background border border-mid-gray/20 rounded-lg p-4 sticky top-4 flex flex-col gap-4 animate-in slide-in-from-right duration-300">
           <div className="flex justify-between items-center pb-2 border-b border-mid-gray/20">
             <div className="flex items-center gap-2">
               <Brain className="w-4 h-4 text-logo-primary" />
@@ -401,7 +503,7 @@ export const HistorySettings: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex-1 min-h-[180px] bg-mid-gray/5 border border-mid-gray/10 rounded-lg p-3 relative text-sm text-text/80 select-text cursor-text">
+          <div className="flex-1 min-h-[180px] overflow-y-auto bg-mid-gray/5 border border-mid-gray/10 rounded-lg p-3 relative text-sm text-text/80 select-text cursor-text">
             {isSummarizing ? (
               <div className="flex flex-col items-center justify-center gap-3 text-text/40 py-8 h-full">
                 <Loader2 className="w-6 h-6 text-logo-primary animate-spin" />
@@ -421,20 +523,106 @@ export const HistorySettings: React.FC = () => {
           </div>
 
           {summaryText && (
-            <Button
-              onClick={() => {
-                if (summaryText) {
-                  navigator.clipboard.writeText(summaryText);
-                  toast.success(t("settings.history.summaryCopied"));
-                }
-              }}
-              variant="secondary"
-              size="sm"
-              className="w-full flex items-center justify-center gap-2"
-            >
-              <Copy className="w-4 h-4" />
-              <span>{t("settings.history.copySummary")}</span>
-            </Button>
+            <div className="flex flex-col gap-2 w-full flex-shrink-0">
+              <div className="flex gap-2 w-full">
+                <Button
+                  onClick={() => {
+                    if (activeSummaryEntry) {
+                      handleRegenerateSummary(activeSummaryEntry);
+                    }
+                  }}
+                  disabled={isSummarizing}
+                  variant="secondary"
+                  size="sm"
+                  className="flex-1 flex items-center justify-center gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>{t("settings.history.regenerateSummary")}</span>
+                </Button>
+                <Button
+                  onClick={() => setShowCustomPromptModal((v) => !v)}
+                  disabled={isSummarizing}
+                  variant="secondary"
+                  size="sm"
+                  className="flex-1 flex items-center justify-center gap-1.5"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>{t("settings.history.regenerateWithPrompt")}</span>
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (summaryText) {
+                      navigator.clipboard.writeText(summaryText);
+                      toast.success(t("settings.history.summaryCopied"));
+                    }
+                  }}
+                  variant="secondary"
+                  size="sm"
+                  className="flex-1 flex items-center justify-center gap-1.5"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>{t("settings.history.copySummary")}</span>
+                </Button>
+              </div>
+
+              {showCustomPromptModal && (
+                <div className="flex flex-col gap-2 p-3 bg-mid-gray/5 border border-mid-gray/15 rounded-lg animate-in fade-in slide-in-from-top-2 duration-200">
+                  <label className="text-xs font-medium text-text/70">
+                    {t("settings.history.customPromptTitle")}
+                  </label>
+                  <textarea
+                    value={customPromptInput}
+                    onChange={(e) => setCustomPromptInput(e.target.value)}
+                    placeholder={t("settings.history.customPromptPlaceholder")}
+                    className="w-full min-h-[72px] max-h-32 resize-y rounded-md border border-mid-gray/20 bg-background px-3 py-2 text-xs text-text placeholder:text-text/30 focus:outline-none focus:ring-1 focus:ring-logo-primary/40 focus:border-logo-primary/40"
+                    onKeyDown={(e) => {
+                      if (
+                        e.key === "Enter" &&
+                        !e.shiftKey &&
+                        customPromptInput.trim() &&
+                        activeSummaryEntry
+                      ) {
+                        e.preventDefault();
+                        handleRegenerateWithCustomPrompt(
+                          activeSummaryEntry,
+                          customPromptInput.trim(),
+                        );
+                      }
+                    }}
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      onClick={() => {
+                        setShowCustomPromptModal(false);
+                        setCustomPromptInput("");
+                      }}
+                      variant="secondary"
+                      size="sm"
+                      className="text-xs px-3"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (activeSummaryEntry && customPromptInput.trim()) {
+                          handleRegenerateWithCustomPrompt(
+                            activeSummaryEntry,
+                            customPromptInput.trim(),
+                          );
+                        }
+                      }}
+                      disabled={!customPromptInput.trim() || isSummarizing}
+                      variant="secondary"
+                      size="sm"
+                      className="text-xs px-3 flex items-center gap-1.5"
+                    >
+                      <Send className="w-3 h-3" />
+                      <span>{t("settings.history.customPromptSubmit")}</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -447,6 +635,8 @@ interface HistoryEntryProps {
   onToggleSaved: () => void;
   onCopyText: () => void;
   onShowSummary: () => void;
+  onRegenerateSummary: () => void;
+  onRegenerateWithCustomPrompt: (prompt: string) => void;
   isSummaryActive: boolean;
   isSummarizingThis: boolean;
   getAudioUrl: (fileName: string) => Promise<string | null>;
@@ -461,6 +651,8 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   onToggleSaved,
   onCopyText,
   onShowSummary,
+  onRegenerateSummary,
+  onRegenerateWithCustomPrompt,
   isSummaryActive,
   isSummarizingThis,
   getAudioUrl,
@@ -633,7 +825,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             </button>
           </div>
 
-          <div className="text-xs text-text/80 select-text cursor-text leading-relaxed">
+          <div className="text-xs text-text/80 select-text cursor-text leading-relaxed max-h-48 overflow-y-auto pr-1">
             {isSummarizingThis ? (
               <div className="flex flex-col items-center justify-center gap-2 text-text/40 py-4">
                 <Loader2 className="w-4 h-4 text-logo-primary animate-spin" />
@@ -651,19 +843,101 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </div>
 
           {summaryText && !isSummarizingThis && (
-            <div className="flex justify-end">
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(summaryText);
-                  toast.success(t("settings.history.summaryCopied"));
-                }}
-                className="flex items-center gap-1 text-[11px] font-medium text-text/60 hover:text-logo-primary transition-colors py-1 px-2 rounded border border-mid-gray/20 hover:border-logo-primary/30"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                <span>{t("settings.history.copySummary")}</span>
-              </button>
-            </div>
+            <InlineSummaryActions
+              summaryText={summaryText}
+              onRegenerateSummary={onRegenerateSummary}
+              onRegenerateWithCustomPrompt={onRegenerateWithCustomPrompt}
+            />
           )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Extracted sub-component for inline summary action buttons (small screen)
+const InlineSummaryActions: React.FC<{
+  summaryText: string;
+  onRegenerateSummary: () => void;
+  onRegenerateWithCustomPrompt: (prompt: string) => void;
+}> = ({ summaryText, onRegenerateSummary, onRegenerateWithCustomPrompt }) => {
+  const { t } = useTranslation();
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [promptInput, setPromptInput] = useState("");
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={onRegenerateSummary}
+          className="flex items-center gap-1 text-[11px] font-medium text-text/60 hover:text-logo-primary transition-colors py-1 px-2 rounded border border-mid-gray/20 hover:border-logo-primary/30 cursor-pointer"
+        >
+          <RotateCcw className="w-3 h-3" />
+          <span>{t("settings.history.regenerateSummary")}</span>
+        </button>
+        <button
+          onClick={() => setShowPrompt((v) => !v)}
+          className="flex items-center gap-1 text-[11px] font-medium text-text/60 hover:text-logo-primary transition-colors py-1 px-2 rounded border border-mid-gray/20 hover:border-logo-primary/30 cursor-pointer"
+        >
+          <Pencil className="w-3 h-3" />
+          <span>{t("settings.history.regenerateWithPrompt")}</span>
+        </button>
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(summaryText);
+            toast.success(t("settings.history.summaryCopied"));
+          }}
+          className="flex items-center gap-1 text-[11px] font-medium text-text/60 hover:text-logo-primary transition-colors py-1 px-2 rounded border border-mid-gray/20 hover:border-logo-primary/30 cursor-pointer"
+        >
+          <Copy className="w-3 h-3" />
+          <span>{t("settings.history.copySummary")}</span>
+        </button>
+      </div>
+
+      {showPrompt && (
+        <div className="flex flex-col gap-1.5 p-2 bg-mid-gray/5 border border-mid-gray/15 rounded-lg animate-in fade-in slide-in-from-top-2 duration-200">
+          <label className="text-[10px] font-medium text-text/70">
+            {t("settings.history.customPromptTitle")}
+          </label>
+          <textarea
+            value={promptInput}
+            onChange={(e) => setPromptInput(e.target.value)}
+            placeholder={t("settings.history.customPromptPlaceholder")}
+            className="w-full min-h-[56px] max-h-24 resize-y rounded-md border border-mid-gray/20 bg-background px-2 py-1.5 text-[11px] text-text placeholder:text-text/30 focus:outline-none focus:ring-1 focus:ring-logo-primary/40 focus:border-logo-primary/40"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && promptInput.trim()) {
+                e.preventDefault();
+                onRegenerateWithCustomPrompt(promptInput.trim());
+                setShowPrompt(false);
+                setPromptInput("");
+              }
+            }}
+          />
+          <div className="flex gap-1.5 justify-end">
+            <button
+              onClick={() => {
+                setShowPrompt(false);
+                setPromptInput("");
+              }}
+              className="text-[10px] font-medium text-text/50 hover:text-text transition-colors py-0.5 px-2 rounded border border-mid-gray/20 hover:border-mid-gray/30 cursor-pointer"
+            >
+              <X className="w-2.5 h-2.5" />
+            </button>
+            <button
+              onClick={() => {
+                if (promptInput.trim()) {
+                  onRegenerateWithCustomPrompt(promptInput.trim());
+                  setShowPrompt(false);
+                  setPromptInput("");
+                }
+              }}
+              disabled={!promptInput.trim()}
+              className="flex items-center gap-1 text-[10px] font-medium text-text/60 hover:text-logo-primary transition-colors py-0.5 px-2 rounded border border-mid-gray/20 hover:border-logo-primary/30 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Send className="w-2.5 h-2.5" />
+              <span>{t("settings.history.customPromptSubmit")}</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

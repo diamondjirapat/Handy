@@ -1,3 +1,4 @@
+use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
 use serde::Serialize;
@@ -41,7 +42,39 @@ pub fn unload_model_manually(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn summarize_transcription(app: AppHandle, text: String) -> Result<String, String> {
+pub async fn summarize_transcription(
+    app: AppHandle,
+    history_manager: State<'_, std::sync::Arc<HistoryManager>>,
+    id: i64,
+    force: bool,
+    custom_prompt: Option<String>,
+) -> Result<String, String> {
+    let entry = history_manager
+        .get_entry_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("History entry {} not found", id))?;
+
+    // When using a custom prompt, always force regeneration
+    let has_custom_prompt = custom_prompt
+        .as_ref()
+        .map(|s| !s.trim().is_empty())
+        .unwrap_or(false);
+
+    // Check if a saved summary already exists
+    if !force && !has_custom_prompt {
+        if let Some(existing_summary) = entry.summary_text {
+            if !existing_summary.trim().is_empty() {
+                return Ok(existing_summary);
+            }
+        }
+    }
+
+    let text = entry.transcription_text;
+    if text.trim().is_empty() {
+        return Err("Cannot summarize empty transcription".to_string());
+    }
+
     let settings = get_settings(&app);
 
     let base_url = settings
@@ -75,12 +108,19 @@ pub async fn summarize_transcription(app: AppHandle, text: String) -> Result<Str
         supports_structured_output: false,
     };
 
-    let prompt_template = settings
-        .summary_prompt
-        .as_ref()
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .unwrap_or("Please provide a concise summary of the following text:");
+    // Use the custom prompt if provided, otherwise fall back to settings
+    let prompt_template: String = if has_custom_prompt {
+        custom_prompt.unwrap()
+    } else {
+        settings
+            .summary_prompt
+            .as_ref()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| {
+                "Please provide a concise summary of the following text:".to_string()
+            })
+    };
 
     // Enforce that the LLM responds in the same language as the input text
     let prompt = format!(
@@ -112,7 +152,13 @@ pub async fn summarize_transcription(app: AppHandle, text: String) -> Result<Str
     )
     .await
     {
-        Ok(Some(summary)) => Ok(summary),
+        Ok(Some(summary)) => {
+            // Save the summary to the database
+            history_manager
+                .update_summary(id, summary.clone())
+                .map_err(|e| e.to_string())?;
+            Ok(summary)
+        }
         Ok(None) => Err("Received empty response from the LLM provider".to_string()),
         Err(e) => Err(format!("LLM summarization failed: {}", e)),
     }
