@@ -186,3 +186,10 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     log::info!("Shortcuts initialized successfully");
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn trigger_recording(app: AppHandle) -> Result<(), String> {
+    crate::signal_handle::send_transcription_input(&app, "transcribe", "UI");
+    Ok(())
+}

@@ -13,10 +13,7 @@ const TARGET_SAMPLE_RATE: u32 = 16000;
 
 pub fn read_audio_file<P: AsRef<Path>>(file_path: P) -> Result<Vec<f32>> {
     let file = File::open(file_path.as_ref())?;
-    let mss = MediaSourceStream::new(
-        Box::new(file),
-        MediaSourceStreamOptions::default(),
-    );
+    let mss = MediaSourceStream::new(Box::new(file), MediaSourceStreamOptions::default());
 
     // Register all default formats and decoders
     let mut hint = symphonia::core::probe::Hint::new();
@@ -32,9 +29,9 @@ pub fn read_audio_file<P: AsRef<Path>>(file_path: P) -> Result<Vec<f32>> {
     )?;
 
     let mut format = probe_result.format;
-    let track = format.default_track().ok_or_else(|| {
-        anyhow!("No default audio track found in the format")
-    })?;
+    let track = format
+        .default_track()
+        .ok_or_else(|| anyhow!("No default audio track found in the format"))?;
 
     // Copy track ID and clone codec params to release format borrow
     let track_id = track.id;
@@ -44,10 +41,8 @@ pub fn read_audio_file<P: AsRef<Path>>(file_path: P) -> Result<Vec<f32>> {
     let mut src_sr = codec_params.sample_rate;
     let mut src_channels = codec_params.channels.map(|c| c.count() as u32);
 
-    let mut decoder = symphonia::default::get_codecs().make(
-        &codec_params,
-        &DecoderOptions::default(),
-    )?;
+    let mut decoder =
+        symphonia::default::get_codecs().make(&codec_params, &DecoderOptions::default())?;
 
     let mut all_samples: Vec<f32> = Vec::new();
 
@@ -161,14 +156,16 @@ fn resample_audio(input: &[f32], in_hz: usize, out_hz: usize) -> Result<Vec<f32>
 
     for chunk in input.chunks(chunk_size) {
         if chunk.len() == chunk_size {
-            let processed = resampler.process(&[chunk], None)
+            let processed = resampler
+                .process(&[chunk], None)
                 .map_err(|e| anyhow!("Resampling failed: {}", e))?;
             output.extend_from_slice(&processed[0]);
         } else {
             buffer.clear();
             buffer.extend_from_slice(chunk);
             buffer.resize(chunk_size, 0.0);
-            let processed = resampler.process(&[&buffer[..]], None)
+            let processed = resampler
+                .process(&[&buffer[..]], None)
                 .map_err(|e| anyhow!("Resampling failed: {}", e))?;
             output.extend_from_slice(&processed[0]);
         }

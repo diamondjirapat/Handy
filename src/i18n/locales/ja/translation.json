@@ -15,7 +15,8 @@
     "postProcessing": "後処理",
     "history": "履歴",
     "debug": "デバッグ",
-    "about": "概要"
+    "about": "概要",
+    "summary": "AI Summary"
   },
   "onboarding": {
     "subtitle": "開始するには、文字起こしモデルを選択してください",
@@ -245,7 +246,9 @@
         "output": "出力",
         "transcription": "文字起こし",
         "history": "履歴",
-        "experimental": "実験的"
+        "experimental": "実験的",
+        "env": "Environment Variables",
+        "summaryApi": "Summarization API"
       },
       "experimentalToggle": {
         "label": "実験的機能",
@@ -356,6 +359,33 @@
         "add": "追加",
         "remove": "{{word}}を削除",
         "duplicate": "「{{word}}」は既に存在します"
+      },
+      "env": {
+        "title": "Custom Environment Variables",
+        "description": "Define custom environment variables (e.g. HTTP_PROXY=http://127.0.0.1:7890) using .env format. These are applied to the process environment at startup.",
+        "placeholder": "HTTP_PROXY=http://127.0.0.1:7890\nHF_ENDPOINT=https://hf-mirror.com"
+      },
+      "summaryApi": {
+        "name": {
+          "title": "Provider Name",
+          "description": "Custom label to identify this OpenAI-compatible API backend.",
+          "placeholder": "My Local LLM"
+        },
+        "baseUrl": {
+          "title": "Base URL",
+          "description": "The endpoint base URL for the chat completion request.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API Key",
+          "description": "The API key or bearer token to authorize request. Can be left empty for local endpoints.",
+          "placeholder": "Enter API Key"
+        },
+        "model": {
+          "title": "Model Name",
+          "description": "The exact model identifier (e.g. gpt-4o-mini, llama3) to request.",
+          "placeholder": "gpt-4o-mini"
+        }
       }
     },
     "postProcessing": {
@@ -431,7 +461,14 @@
       "retranscribe": "再文字起こし",
       "retranscribeError": "再文字起こしに失敗しました。もう一度お試しください。",
       "transcribing": "文字起こし中...",
-      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。"
+      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。",
+      "summarize": "Summarize transcription",
+      "summaryTitle": "Summary",
+      "summarizing": "Summarizing transcription...",
+      "copySummary": "Copy summary",
+      "summaryCopied": "Summary copied to clipboard",
+      "summaryError": "Failed to generate summary. Please check your Post-Processing API settings.",
+      "noSummary": "No summary generated"
     },
     "debug": {
       "title": "デバッグ",
@@ -548,6 +585,23 @@
           "details": "Handyは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
         }
       }
+    },
+    "summaryApi": {
+      "title": "AI Summarization Settings",
+      "prompt": {
+        "group": "Summarization Prompt Template",
+        "title": "Custom Summary Prompt",
+        "description": "Customize the prompt or system instructions used to summarize your transcriptions. If left blank, it defaults to: 'Please provide a concise summary of the following text:'.",
+        "placeholder": "e.g. Please outline the main actionable points and bullet list key takeaways:"
+      },
+      "test": {
+        "button": "Test API Connection",
+        "buttonTesting": "Testing Connection...",
+        "noBaseUrl": "Summary API Base URL is not configured. Please set it up first.",
+        "loading": "Testing connection to the Summarization API...",
+        "success": "Connection successful! LLM response: '{{response}}'",
+        "error": "Connection test failed: {{error}}"
+      }
     }
   },
   "footer": {
@@ -571,7 +625,12 @@
     "uploadAudioDialogTitle": "Select Audio File",
     "uploading": "Transcribing...",
     "uploadAudioSuccess": "Transcription complete",
-    "uploadAudioError": "Upload failed"
+    "uploadAudioError": "Upload failed",
+    "record": "Record",
+    "transcribe": "Transcribe",
+    "cancel": "Cancel",
+    "recording": "Recording...",
+    "transcribeFile": "Transcribe File"
   },
   "common": {
     "loading": "読み込み中...",
@@ -627,5 +686,9 @@
   "overlay": {
     "transcribing": "文字起こし中...",
     "processing": "処理中..."
+  },
+  "dragDrop": {
+    "dragOver": "Drop audio file to transcribe",
+    "supportedFormats": "Supports WAV, MP3, M4A, AAC, FLAC, OGG"
   }
 }

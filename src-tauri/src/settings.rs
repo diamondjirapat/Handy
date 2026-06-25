@@ -430,6 +430,18 @@ pub struct AppSettings {
     pub whisper_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+    #[serde(default)]
+    pub custom_env_vars: Option<String>,
+    #[serde(default)]
+    pub summary_provider_name: Option<String>,
+    #[serde(default)]
+    pub summary_model: Option<String>,
+    #[serde(default)]
+    pub summary_base_url: Option<String>,
+    #[serde(default)]
+    pub summary_api_key: Option<String>,
+    #[serde(default)]
+    pub summary_prompt: Option<String>,
 }
 
 fn default_model() -> String {
@@ -814,6 +826,49 @@ pub fn get_default_settings() -> AppSettings {
         ort_accelerator: OrtAcceleratorSetting::default(),
         whisper_gpu_device: default_whisper_gpu_device(),
         extra_recording_buffer_ms: 0,
+        custom_env_vars: None,
+        summary_provider_name: None,
+        summary_model: None,
+        summary_base_url: None,
+        summary_api_key: None,
+        summary_prompt: None,
+    }
+}
+
+pub fn apply_custom_env_vars(env_str: &str) {
+    for line in env_str.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        if let Some((key, val)) = line.split_once('=') {
+            let key = key.trim();
+            let val = val.trim();
+            if !key.is_empty() {
+                // If value is wrapped in quotes, unwrap them
+                let val = if (val.starts_with('"') && val.ends_with('"'))
+                    || (val.starts_with('\'') && val.ends_with('\''))
+                {
+                    if val.len() >= 2 {
+                        &val[1..val.len() - 1]
+                    } else {
+                        val
+                    }
+                } else {
+                    val
+                };
+                std::env::set_var(key, val);
+                log::info!(
+                    "Set environment variable: {} = {}",
+                    key,
+                    if key.contains("KEY") || key.contains("PASSWORD") || key.contains("SECRET") {
+                        "[REDACTED]"
+                    } else {
+                        val
+                    }
+                );
+            }
+        }
     }
 }
 

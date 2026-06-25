@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ShowOverlay } from "../ShowOverlay";
 import { ModelUnloadTimeoutSetting } from "../ModelUnloadTimeout";
 import { CustomWords } from "../CustomWords";
-import { SettingsGroup } from "../../ui/SettingsGroup";
+import { SettingsGroup, SettingContainer, Textarea } from "../../ui";
+import { Input } from "../../ui/Input";
 import { StartHidden } from "../StartHidden";
 import { AutostartToggle } from "../AutostartToggle";
 import { ShowTrayIcon } from "../ShowTrayIcon";
@@ -23,8 +24,23 @@ import { LazyStreamClose } from "../LazyStreamClose";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
-  const { getSetting } = useSettings();
+  const { settings, updateSetting, getSetting } = useSettings();
   const experimentalEnabled = getSetting("experimental_enabled") || false;
+
+  const [envVars, setEnvVars] = useState(settings?.custom_env_vars || "");
+
+  useEffect(() => {
+    if (settings?.custom_env_vars !== undefined) {
+      setEnvVars(settings.custom_env_vars || "");
+    }
+  }, [settings?.custom_env_vars]);
+
+  const handleSaveEnvVars = async () => {
+    if (settings && envVars !== (settings.custom_env_vars || "")) {
+      // @ts-ignore
+      await updateSetting("custom_env_vars", envVars || null);
+    }
+  };
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
@@ -47,6 +63,23 @@ export const AdvancedSettings: React.FC = () => {
       <SettingsGroup title={t("settings.advanced.groups.transcription")}>
         <CustomWords descriptionMode="tooltip" grouped />
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.advanced.groups.env.title")}>
+        <SettingContainer
+          title={t("settings.advanced.env.title")}
+          description={t("settings.advanced.env.description")}
+          layout="stacked"
+          grouped={true}
+        >
+          <Textarea
+            value={envVars}
+            onChange={(e) => setEnvVars(e.target.value)}
+            onBlur={handleSaveEnvVars}
+            placeholder={t("settings.advanced.env.placeholder")}
+            className="w-full font-mono text-sm h-32 mt-2"
+          />
+        </SettingContainer>
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.history")}>

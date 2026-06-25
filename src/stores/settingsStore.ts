@@ -155,6 +155,14 @@ const settingUpdaters: {
     commands.changeWhisperGpuDevice(value as number),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
+  custom_env_vars: (value) =>
+    commands.changeCustomEnvVarsSetting(value as string),
+  summary_provider_name: (value) =>
+    commands.changeSummaryProviderName(value as string),
+  summary_model: (value) => commands.changeSummaryModel(value as string),
+  summary_base_url: (value) => commands.changeSummaryBaseUrl(value as string),
+  summary_api_key: (value) => commands.changeSummaryApiKey(value as string),
+  summary_prompt: (value) => commands.changeSummaryPrompt(value as string),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

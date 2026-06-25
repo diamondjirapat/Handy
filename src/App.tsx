@@ -3,6 +3,8 @@ import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
+import { Upload } from "lucide-react";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
@@ -45,6 +47,63 @@ function App() {
     (state) => state.refreshOutputDevices,
   );
   const hasCompletedPostOnboardingInit = useRef(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+
+  const handleDropFile = async (filePath: string) => {
+    const toastId = toast.loading(t("footer.uploading"));
+    try {
+      const result = await commands.uploadAudioFile(filePath);
+      if (result.status === "ok") {
+        toast.success(t("footer.uploadAudioSuccess"), {
+          id: toastId,
+          description: result.data.transcription.slice(0, 200),
+        });
+      } else {
+        toast.error(t("footer.uploadAudioError"), {
+          id: toastId,
+          description: String(result.error),
+        });
+      }
+    } catch (error) {
+      console.error("Failed to upload audio file:", error);
+      toast.error(t("footer.uploadAudioError"), {
+        id: toastId,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (onboardingStep !== "done") return;
+
+    let unlisten: (() => void) | undefined;
+
+    getCurrentWebviewWindow()
+      .onDragDropEvent((event) => {
+        if (event.payload.type === "enter" || event.payload.type === "over") {
+          setIsDraggingFile(true);
+        } else if (event.payload.type === "drop") {
+          setIsDraggingFile(false);
+          const filePath = event.payload.paths[0];
+          if (filePath) {
+            handleDropFile(filePath);
+          }
+        } else if (event.payload.type === "leave") {
+          setIsDraggingFile(false);
+        }
+      })
+      .then((unlistenFn) => {
+        unlisten = unlistenFn;
+      })
+      .catch((e) => {
+        console.error("Failed to register drag-drop event:", e);
+      });
+
+    return () => {
+      if (unlisten) {
+        unlisten();
+      }
+    };
+  }, [onboardingStep]);
 
   useEffect(() => {
     checkOnboardingStatus();
@@ -282,6 +341,20 @@ function App() {
       </div>
       {/* Fixed footer at bottom */}
       <Footer />
+
+      {isDraggingFile && (
+        <div className="absolute inset-0 bg-background/90 backdrop-blur-md z-50 flex flex-col items-center justify-center pointer-events-none transition-all duration-300">
+          <div className="p-8 rounded-2xl border-2 border-dashed border-logo-primary/50 bg-mid-gray/5 flex flex-col items-center gap-4 max-w-sm text-center animate-pulse">
+            <Upload className="w-12 h-12 text-logo-primary animate-bounce" />
+            <h3 className="text-lg font-semibold text-text">
+              {t("dragDrop.dragOver")}
+            </h3>
+            <p className="text-sm text-text/50">
+              {t("dragDrop.supportedFormats")}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

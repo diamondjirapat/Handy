@@ -1150,6 +1150,61 @@ pub fn change_whisper_gpu_device(app: AppHandle, device: i32) -> Result<(), Stri
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_custom_env_vars_setting(app: AppHandle, env_vars: String) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.custom_env_vars = Some(env_vars.clone());
+    settings::write_settings(&app, s);
+    settings::apply_custom_env_vars(&env_vars);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_summary_provider_name(app: AppHandle, value: String) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.summary_provider_name = Some(value);
+    settings::write_settings(&app, s);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_summary_model(app: AppHandle, value: String) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.summary_model = Some(value);
+    settings::write_settings(&app, s);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_summary_base_url(app: AppHandle, value: String) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.summary_base_url = Some(value);
+    settings::write_settings(&app, s);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_summary_api_key(app: AppHandle, value: String) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.summary_api_key = Some(value);
+    settings::write_settings(&app, s);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_summary_prompt(app: AppHandle, value: String) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.summary_prompt = Some(value);
+    settings::write_settings(&app, s);
+    Ok(())
+}
+
 /// Return which accelerators and GPU devices are available for this build.
 ///
 /// First-call cost is dominated by enumerating GPU devices through the

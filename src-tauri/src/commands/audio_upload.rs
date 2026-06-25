@@ -22,8 +22,8 @@ pub async fn upload_audio_file(
     history_manager: State<'_, Arc<HistoryManager>>,
 ) -> Result<UploadAudioResult, String> {
     // Read audio samples from any supported format
-    let samples = read_audio_file(&file_path)
-        .map_err(|e| format!("Failed to read audio file: {}", e))?;
+    let samples =
+        read_audio_file(&file_path).map_err(|e| format!("Failed to read audio file: {}", e))?;
 
     if samples.is_empty() {
         return Err("Audio file contains no samples".to_string());

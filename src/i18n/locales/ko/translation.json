@@ -15,7 +15,8 @@
     "postProcessing": "후처리",
     "history": "히스토리",
     "debug": "디버그",
-    "about": "정보"
+    "about": "정보",
+    "summary": "AI Summary"
   },
   "onboarding": {
     "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
@@ -245,7 +246,9 @@
         "output": "출력",
         "transcription": "전사",
         "history": "히스토리",
-        "experimental": "실험적"
+        "experimental": "실험적",
+        "env": "Environment Variables",
+        "summaryApi": "Summarization API"
       },
       "experimentalToggle": {
         "label": "실험적 기능",
@@ -356,6 +359,33 @@
         "add": "추가",
         "remove": "{{word}} 제거",
         "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
+      },
+      "env": {
+        "title": "Custom Environment Variables",
+        "description": "Define custom environment variables (e.g. HTTP_PROXY=http://127.0.0.1:7890) using .env format. These are applied to the process environment at startup.",
+        "placeholder": "HTTP_PROXY=http://127.0.0.1:7890\nHF_ENDPOINT=https://hf-mirror.com"
+      },
+      "summaryApi": {
+        "name": {
+          "title": "Provider Name",
+          "description": "Custom label to identify this OpenAI-compatible API backend.",
+          "placeholder": "My Local LLM"
+        },
+        "baseUrl": {
+          "title": "Base URL",
+          "description": "The endpoint base URL for the chat completion request.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API Key",
+          "description": "The API key or bearer token to authorize request. Can be left empty for local endpoints.",
+          "placeholder": "Enter API Key"
+        },
+        "model": {
+          "title": "Model Name",
+          "description": "The exact model identifier (e.g. gpt-4o-mini, llama3) to request.",
+          "placeholder": "gpt-4o-mini"
+        }
       }
     },
     "postProcessing": {
@@ -431,7 +461,14 @@
       "retranscribe": "다시 전사",
       "retranscribeError": "다시 전사에 실패했습니다. 다시 시도해주세요.",
       "transcribing": "전사 중...",
-      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다."
+      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다.",
+      "summarize": "Summarize transcription",
+      "summaryTitle": "Summary",
+      "summarizing": "Summarizing transcription...",
+      "copySummary": "Copy summary",
+      "summaryCopied": "Summary copied to clipboard",
+      "summaryError": "Failed to generate summary. Please check your Post-Processing API settings.",
+      "noSummary": "No summary generated"
     },
     "debug": {
       "title": "디버그",
@@ -548,6 +585,23 @@
           "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
         }
       }
+    },
+    "summaryApi": {
+      "title": "AI Summarization Settings",
+      "prompt": {
+        "group": "Summarization Prompt Template",
+        "title": "Custom Summary Prompt",
+        "description": "Customize the prompt or system instructions used to summarize your transcriptions. If left blank, it defaults to: 'Please provide a concise summary of the following text:'.",
+        "placeholder": "e.g. Please outline the main actionable points and bullet list key takeaways:"
+      },
+      "test": {
+        "button": "Test API Connection",
+        "buttonTesting": "Testing Connection...",
+        "noBaseUrl": "Summary API Base URL is not configured. Please set it up first.",
+        "loading": "Testing connection to the Summarization API...",
+        "success": "Connection successful! LLM response: '{{response}}'",
+        "error": "Connection test failed: {{error}}"
+      }
     }
   },
   "footer": {
@@ -571,7 +625,12 @@
     "uploadAudioDialogTitle": "Select Audio File",
     "uploading": "Transcribing...",
     "uploadAudioSuccess": "Transcription complete",
-    "uploadAudioError": "Upload failed"
+    "uploadAudioError": "Upload failed",
+    "record": "Record",
+    "transcribe": "Transcribe",
+    "cancel": "Cancel",
+    "recording": "Recording...",
+    "transcribeFile": "Transcribe File"
   },
   "common": {
     "loading": "로딩 중...",
@@ -627,5 +686,9 @@
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
     "processing": "처리 중..."
+  },
+  "dragDrop": {
+    "dragOver": "Drop audio file to transcribe",
+    "supportedFormats": "Supports WAV, MP3, M4A, AAC, FLAC, OGG"
   }
 }

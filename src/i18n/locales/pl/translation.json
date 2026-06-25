@@ -15,7 +15,8 @@
     "postProcessing": "Postproces",
     "history": "Historia",
     "debug": "Debugowanie",
-    "about": "O programie"
+    "about": "O programie",
+    "summary": "AI Summary"
   },
   "onboarding": {
     "subtitle": "Aby rozpocząć, wybierz model transkrypcji",
@@ -245,7 +246,9 @@
         "output": "Wyjście",
         "transcription": "Transkrypcja",
         "history": "Historia",
-        "experimental": "Eksperymentalne"
+        "experimental": "Eksperymentalne",
+        "env": "Environment Variables",
+        "summaryApi": "Summarization API"
       },
       "experimentalToggle": {
         "label": "Funkcje Eksperymentalne",
@@ -356,6 +359,33 @@
         "add": "Dodaj",
         "remove": "Usuń {{word}}",
         "duplicate": "\"{{word}}\" już istnieje"
+      },
+      "env": {
+        "title": "Custom Environment Variables",
+        "description": "Define custom environment variables (e.g. HTTP_PROXY=http://127.0.0.1:7890) using .env format. These are applied to the process environment at startup.",
+        "placeholder": "HTTP_PROXY=http://127.0.0.1:7890\nHF_ENDPOINT=https://hf-mirror.com"
+      },
+      "summaryApi": {
+        "name": {
+          "title": "Provider Name",
+          "description": "Custom label to identify this OpenAI-compatible API backend.",
+          "placeholder": "My Local LLM"
+        },
+        "baseUrl": {
+          "title": "Base URL",
+          "description": "The endpoint base URL for the chat completion request.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API Key",
+          "description": "The API key or bearer token to authorize request. Can be left empty for local endpoints.",
+          "placeholder": "Enter API Key"
+        },
+        "model": {
+          "title": "Model Name",
+          "description": "The exact model identifier (e.g. gpt-4o-mini, llama3) to request.",
+          "placeholder": "gpt-4o-mini"
+        }
       }
     },
     "postProcessing": {
@@ -431,7 +461,14 @@
       "retranscribe": "Transkrybuj ponownie",
       "retranscribeError": "Nie udało się ponownie transkrybować. Spróbuj ponownie.",
       "transcribing": "Transkrybuję...",
-      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie za pomocą ikony ponowienia."
+      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie za pomocą ikony ponowienia.",
+      "summarize": "Summarize transcription",
+      "summaryTitle": "Summary",
+      "summarizing": "Summarizing transcription...",
+      "copySummary": "Copy summary",
+      "summaryCopied": "Summary copied to clipboard",
+      "summaryError": "Failed to generate summary. Please check your Post-Processing API settings.",
+      "noSummary": "No summary generated"
     },
     "debug": {
       "title": "Debugowanie",
@@ -548,6 +585,23 @@
           "details": "Handy używa Whisper.cpp do szybkiego, lokalnego przetwarzania mowy na tekst. Dzięki niesamowitej pracy Georgi Gerganova i współtwórców."
         }
       }
+    },
+    "summaryApi": {
+      "title": "AI Summarization Settings",
+      "prompt": {
+        "group": "Summarization Prompt Template",
+        "title": "Custom Summary Prompt",
+        "description": "Customize the prompt or system instructions used to summarize your transcriptions. If left blank, it defaults to: 'Please provide a concise summary of the following text:'.",
+        "placeholder": "e.g. Please outline the main actionable points and bullet list key takeaways:"
+      },
+      "test": {
+        "button": "Test API Connection",
+        "buttonTesting": "Testing Connection...",
+        "noBaseUrl": "Summary API Base URL is not configured. Please set it up first.",
+        "loading": "Testing connection to the Summarization API...",
+        "success": "Connection successful! LLM response: '{{response}}'",
+        "error": "Connection test failed: {{error}}"
+      }
     }
   },
   "footer": {
@@ -571,7 +625,12 @@
     "uploadAudioDialogTitle": "Select Audio File",
     "uploading": "Transcribing...",
     "uploadAudioSuccess": "Transcription complete",
-    "uploadAudioError": "Upload failed"
+    "uploadAudioError": "Upload failed",
+    "record": "Record",
+    "transcribe": "Transcribe",
+    "cancel": "Cancel",
+    "recording": "Recording...",
+    "transcribeFile": "Transcribe File"
   },
   "common": {
     "loading": "Wczytywanie...",
@@ -627,5 +686,9 @@
   "overlay": {
     "transcribing": "Transkrypcja...",
     "processing": "Przetwarzanie..."
+  },
+  "dragDrop": {
+    "dragOver": "Drop audio file to transcribe",
+    "supportedFormats": "Supports WAV, MP3, M4A, AAC, FLAC, OGG"
   }
 }

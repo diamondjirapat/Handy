@@ -334,6 +334,12 @@ pub fn run(cli_args: CliArgs) {
         .commands(collect_commands![
             shortcut::change_binding,
             shortcut::reset_binding,
+            shortcut::change_custom_env_vars_setting,
+            shortcut::change_summary_provider_name,
+            shortcut::change_summary_model,
+            shortcut::change_summary_base_url,
+            shortcut::change_summary_api_key,
+            shortcut::change_summary_prompt,
             shortcut::change_ptt_setting,
             shortcut::change_audio_feedback_setting,
             shortcut::change_audio_feedback_volume_setting,
@@ -385,6 +391,7 @@ pub fn run(cli_args: CliArgs) {
             trigger_update_check,
             show_main_window_command,
             commands::cancel_operation,
+            commands::trigger_recording,
             commands::is_portable,
             commands::get_app_dir_path,
             commands::get_app_settings,
@@ -426,6 +433,8 @@ pub fn run(cli_args: CliArgs) {
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
             commands::transcription::unload_model_manually,
+            commands::transcription::summarize_transcription,
+            commands::transcription::test_summary_connection,
             commands::history::get_history_entries,
             commands::history::toggle_history_entry_saved,
             commands::history::get_audio_file_path,
@@ -532,9 +541,9 @@ pub fn run(cli_args: CliArgs) {
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
                     .title("Handy")
                     .inner_size(680.0, 570.0)
-                    .min_inner_size(680.0, 570.0)
+                    .min_inner_size(500.0, 450.0)
                     .resizable(true)
-                    .maximizable(false)
+                    .maximizable(true)
                     .visible(false);
 
             if let Some(data_dir) = portable::data_dir() {
@@ -544,6 +553,10 @@ pub fn run(cli_args: CliArgs) {
             win_builder.build()?;
 
             let mut settings = get_settings(&app.handle());
+
+            if let Some(ref env_vars) = settings.custom_env_vars {
+                crate::settings::apply_custom_env_vars(env_vars);
+            }
 
             // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)
             if cli_args.debug {
