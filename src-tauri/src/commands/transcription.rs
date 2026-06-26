@@ -166,6 +166,89 @@ pub async fn summarize_transcription(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn ask_about_transcription(
+    app: AppHandle,
+    history_manager: State<'_, std::sync::Arc<HistoryManager>>,
+    id: i64,
+    mut messages: Vec<crate::llm_client::ChatMessage>,
+) -> Result<String, String> {
+    let entry = history_manager
+        .get_entry_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("History entry {} not found", id))?;
+
+    let text = entry.transcription_text;
+    if text.trim().is_empty() {
+        return Err("Cannot ask about empty transcription".to_string());
+    }
+
+    let settings = get_settings(&app);
+
+    let base_url = settings
+        .summary_base_url
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| {
+            "Summary API Base URL is not configured. Please set it up in the Summary settings page."
+                .to_string()
+        })?;
+
+    let api_key = settings.summary_api_key.clone().unwrap_or_default();
+    let model = settings
+        .summary_model
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "gpt-4o-mini".to_string());
+
+    let provider = crate::settings::PostProcessProvider {
+        id: "custom".to_string(),
+        label: settings
+            .summary_provider_name
+            .clone()
+            .unwrap_or_else(|| "Summary API".to_string()),
+        base_url: base_url.to_string(),
+        allow_base_url_edit: true,
+        models_endpoint: None,
+        supports_structured_output: false,
+    };
+
+    // Prepend the system message containing context to the messages vector
+    let system_prompt = format!(
+        "You are a helpful assistant that answers questions about a transcription. Use the following transcription text as context to answer the user's question. If the answer cannot be found in the transcription, say so clearly.\n\nIMPORTANT: Respond in the same language as the user's question.\n\nTranscription:\n{}",
+        text
+    );
+    messages.insert(
+        0,
+        crate::llm_client::ChatMessage {
+            role: "system".to_string(),
+            content: system_prompt,
+        },
+    );
+
+    let (reasoning_effort, reasoning) = (Some("none".to_string()), None);
+
+    match crate::llm_client::send_chat_completion_raw(
+        &provider,
+        api_key,
+        &model,
+        messages,
+        reasoning_effort,
+        reasoning,
+    )
+    .await
+    {
+        Ok(Some(response)) => Ok(response),
+        Ok(None) => Err("Received empty response from the LLM provider".to_string()),
+        Err(e) => Err(format!("LLM response failed: {}", e)),
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn test_summary_connection(app: AppHandle) -> Result<String, String> {
     let settings = get_settings(&app);
 

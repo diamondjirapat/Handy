@@ -3,11 +3,12 @@ use log::debug;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use specta::Type;
 
-#[derive(Debug, Serialize)]
-struct ChatMessage {
-    role: String,
-    content: String,
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
+pub struct ChatMessage {
+    pub role: String,
+    pub content: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -127,6 +128,60 @@ pub async fn send_chat_completion(
         reasoning,
     )
     .await
+}
+
+/// Send a chat completion request to an OpenAI-compatible API with a list of messages
+pub async fn send_chat_completion_raw(
+    provider: &PostProcessProvider,
+    api_key: String,
+    model: &str,
+    messages: Vec<ChatMessage>,
+    reasoning_effort: Option<String>,
+    reasoning: Option<ReasoningConfig>,
+) -> Result<Option<String>, String> {
+    let base_url = provider.base_url.trim_end_matches('/');
+    let url = format!("{}/chat/completions", base_url);
+
+    debug!("Sending chat completion request to: {}", url);
+
+    let client = create_client(provider, &api_key)?;
+
+    let request_body = ChatCompletionRequest {
+        model: model.to_string(),
+        messages,
+        response_format: None,
+        reasoning_effort,
+        reasoning,
+    };
+
+    let response = client
+        .post(&url)
+        .json(&request_body)
+        .send()
+        .await
+        .map_err(|e| format!("HTTP request failed: {}", e))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        let error_text = response
+            .text()
+            .await
+            .unwrap_or_else(|_| "Failed to read error response".to_string());
+        return Err(format!(
+            "API request failed with status {}: {}",
+            status, error_text
+        ));
+    }
+
+    let completion: ChatCompletionResponse = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse API response: {}", e))?;
+
+    Ok(completion
+        .choices
+        .first()
+        .and_then(|choice| choice.message.content.clone()))
 }
 
 /// Send a chat completion request with structured output support

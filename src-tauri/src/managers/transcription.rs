@@ -73,6 +73,7 @@ pub struct TranscriptionManager {
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
+    suspend_unload: Arc<AtomicBool>,
 }
 
 impl TranscriptionManager {
@@ -87,6 +88,7 @@ impl TranscriptionManager {
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
+            suspend_unload: Arc::new(AtomicBool::new(false)),
         };
 
         // Start the idle watcher
@@ -97,6 +99,10 @@ impl TranscriptionManager {
             let handle = thread::spawn(move || {
                 debug!("Idle watcher thread started");
                 while !shutdown_signal.load(Ordering::Relaxed) {
+                    if manager_cloned.suspend_unload.load(Ordering::Relaxed) {
+                        thread::sleep(Duration::from_secs(10));
+                        continue;
+                    }
                     thread::sleep(Duration::from_secs(10)); // Check every 10 seconds
 
                     // Check shutdown signal again after sleep
@@ -237,8 +243,20 @@ impl TranscriptionManager {
         self.last_activity.store(Self::now_ms(), Ordering::Relaxed);
     }
 
+    pub fn suspend_unload(&self) {
+        self.suspend_unload.store(true, Ordering::Relaxed);
+    }
+
+    pub fn resume_unload(&self) {
+        self.suspend_unload.store(false, Ordering::Relaxed);
+    }
+
     /// Unloads the model immediately if the setting is enabled and the model is loaded
     pub fn maybe_unload_immediately(&self, context: &str) {
+        if self.suspend_unload.load(Ordering::Relaxed) {
+            debug!("Unload suspended during: {}", context);
+            return;
+        }
         let settings = get_settings(&self.app_handle);
         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
             && self.is_model_loaded()

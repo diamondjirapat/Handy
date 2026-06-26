@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
@@ -18,6 +18,7 @@ import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
+import { MultipleAudioUploadModal } from "./components/shared";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type OnboardingStep = "accessibility" | "model" | "done";
@@ -48,29 +49,33 @@ function App() {
   );
   const hasCompletedPostOnboardingInit = useRef(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<string[]>([]);
+  const [isProcessingMultiple, setIsProcessingMultiple] = useState(false);
 
-  const handleDropFile = async (filePath: string) => {
-    const toastId = toast.loading(t("footer.uploading"));
+  const handleProcessMultipleFiles = useCallback(async (files: string[], combine: boolean) => {
+    setIsProcessingMultiple(true);
     try {
-      const result = await commands.uploadAudioFile(filePath);
+      const result = await commands.uploadMultipleAudioFiles(files, combine);
       if (result.status === "ok") {
+        const desc = combine
+          ? result.data.transcriptions[0]?.slice(0, 200)
+          : result.data.transcriptions.map((t) => t.slice(0, 50)).join(" | ");
         toast.success(t("footer.uploadAudioSuccess"), {
-          id: toastId,
-          description: result.data.transcription.slice(0, 200),
+          description: desc,
         });
+        setPendingFiles([]);
       } else {
         toast.error(t("footer.uploadAudioError"), {
-          id: toastId,
           description: String(result.error),
         });
       }
     } catch (error) {
-      console.error("Failed to upload audio file:", error);
-      toast.error(t("footer.uploadAudioError"), {
-        id: toastId,
-      });
+      console.error("Failed to process multiple audio files:", error);
+      toast.error(t("footer.uploadAudioError"));
+    } finally {
+      setIsProcessingMultiple(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     if (onboardingStep !== "done") return;
@@ -83,9 +88,9 @@ function App() {
           setIsDraggingFile(true);
         } else if (event.payload.type === "drop") {
           setIsDraggingFile(false);
-          const filePath = event.payload.paths[0];
-          if (filePath) {
-            handleDropFile(filePath);
+          const paths = event.payload.paths;
+          if (paths && paths.length > 0) {
+            setPendingFiles(paths);
           }
         } else if (event.payload.type === "leave") {
           setIsDraggingFile(false);
@@ -341,7 +346,7 @@ function App() {
         </div>
       </div>
       {/* Fixed footer at bottom */}
-      <Footer />
+      <Footer onFilesSelected={(files) => setPendingFiles(files)} />
 
       {isDraggingFile && (
         <div className="absolute inset-0 bg-background/90 backdrop-blur-md z-50 flex flex-col items-center justify-center pointer-events-none transition-all duration-300">
@@ -356,6 +361,14 @@ function App() {
           </div>
         </div>
       )}
+
+      <MultipleAudioUploadModal
+        isOpen={pendingFiles.length > 0}
+        filePaths={pendingFiles}
+        onClose={() => setPendingFiles([])}
+        onProcess={handleProcessMultipleFiles}
+        isProcessing={isProcessingMultiple}
+      />
     </div>
   );
 }

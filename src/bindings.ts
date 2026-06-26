@@ -817,6 +817,14 @@ async testSummaryConnection() : Promise<Result<string, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async askAboutTranscription(id: number, messages: ChatMessage[]) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("ask_about_transcription", { id, messages }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getHistoryEntries(cursor: number | null, limit: number | null) : Promise<Result<PaginatedHistory, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_history_entries", { cursor, limit }) };
@@ -860,6 +868,14 @@ async retryHistoryEntryTranscription(id: number) : Promise<Result<null, string>>
 async uploadAudioFile(filePath: string) : Promise<Result<UploadAudioResult, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("upload_audio_file", { filePath }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async uploadMultipleAudioFiles(filePaths: string[], combine: boolean) : Promise<Result<UploadMultipleAudioResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("upload_multiple_audio_files", { filePaths, combine }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -915,6 +931,7 @@ export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AvailableAccelerators = { whisper: string[]; ort: string[]; gpu_devices: GpuDeviceOption[] }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
+export type ChatMessage = { role: string; content: string }
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CustomSounds = { start: boolean; stop: boolean }
 export type EngineType = "Whisper" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GigaAM" | "Canary" | "Cohere"
@@ -947,6 +964,7 @@ export type ShortcutBinding = { id: string; name: string; description: string; d
 export type SoundTheme = "marimba" | "pop" | "custom"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type UploadAudioResult = { transcription: string }
+export type UploadMultipleAudioResult = { transcriptions: string[] }
 export type WhisperAcceleratorSetting = "auto" | "cpu" | "gpu"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
 

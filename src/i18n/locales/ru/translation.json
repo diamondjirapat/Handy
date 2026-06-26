@@ -474,6 +474,9 @@
       "customPromptTitle": "Regenerate with custom prompt",
       "customPromptPlaceholder": "e.g. Summarize as bullet points, Extract action items, Translate to English...",
       "customPromptSubmit": "Generate",
+      "askAboutTranscript": "Ask About Transcript",
+      "noQuestionsYet": "Ask a question about this transcript",
+      "questionPlaceholder": "Ask a question...",
       "askTranscript": "Ask",
       "askTranscriptTitle": "Ask about this transcript",
       "askTranscriptPlaceholder": "Ask anything about this transcript...",
@@ -482,7 +485,9 @@
       "askTranscriptError": "Failed to get an answer. Please check your AI Summarization settings.",
       "askTranscriptCopyAnswer": "Copy answer",
       "askTranscriptCopied": "Answer copied to clipboard",
-      "askTranscriptClearChat": "Clear chat"
+      "askTranscriptClearChat": "Clear chat",
+      "clearHistory": "Clear History",
+      "chatHint": "Ask any question about this audio transcription. The AI will use the full text as context."
     },
     "debug": {
       "title": "Отлаживать",
@@ -644,7 +649,19 @@
     "transcribe": "Transcribe",
     "cancel": "Cancel",
     "recording": "Recording...",
-    "transcribeFile": "Transcribe File"
+    "transcribeFile": "Transcribe File",
+    "multipleUploadTitle": "Process Multiple Recordings",
+    "multipleUploadDescription": "You selected multiple audio files. Choose to process them individually or combine them into a single long audio, and align them in the correct order.",
+    "processIndividually": "Process Individually",
+    "processIndividuallyDesc": "Transcribes each file separately and creates individual history entries.",
+    "combineAudio": "Combine into One Long Audio",
+    "combineAudioDesc": "Concatenates the files in the order below and transcribes them as a single audio.",
+    "transcribeFilesButton": "Transcribe Files",
+    "orderLabel": "Order / Alignment",
+    "noFilesSelected": "No files selected",
+    "processingRecordings": "Processing recordings...",
+    "overallProgress": "Overall progress: {{current}} / {{total}} files",
+    "filesToProcess": "Files to Process"
   },
   "common": {
     "loading": "Загрузка...",

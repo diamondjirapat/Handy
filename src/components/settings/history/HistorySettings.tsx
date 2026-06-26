@@ -5,6 +5,7 @@ import {
   Check,
   Copy,
   FolderOpen,
+  MessageSquare,
   Pencil,
   RotateCcw,
   Send,
@@ -22,6 +23,7 @@ import {
   events,
   type HistoryEntry,
   type HistoryUpdatePayload,
+  type ChatMessage,
 } from "@/bindings";
 import { useOsType } from "@/hooks/useOsType";
 import { formatDateTime } from "@/utils/dateFormat";
@@ -90,6 +92,13 @@ export const HistorySettings: React.FC = () => {
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768);
   const [showCustomPromptModal, setShowCustomPromptModal] = useState(false);
   const [customPromptInput, setCustomPromptInput] = useState("");
+
+  // States for "Ask about transcript" overlay & memory
+  const [chatEntry, setChatEntry] = useState<HistoryEntry | null>(null);
+  const [chatHistories, setChatHistories] = useState<
+    Record<number, ChatMessage[]>
+  >({});
+  const [isChatting, setIsChatting] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -272,10 +281,14 @@ export const HistorySettings: React.FC = () => {
       // Toggle off if clicking the same entry
       setActiveSummaryEntry(null);
       setSummaryText(null);
+      setChatEntry(null); // Close companion chat panel too
       return;
     }
 
     setActiveSummaryEntry(entry);
+    if (chatEntry) {
+      setChatEntry(entry); // Sync chat panel to the new entry
+    }
 
     // If summary is already saved in the database, use it directly
     if (entry.summary_text && entry.summary_text.trim()) {
@@ -315,6 +328,13 @@ export const HistorySettings: React.FC = () => {
       setActiveSummaryEntry(null);
     } finally {
       setIsSummarizing(false);
+    }
+  };
+
+  const handleOpenChat = (entry: HistoryEntry) => {
+    setChatEntry(entry);
+    if (activeSummaryEntry?.id !== entry.id) {
+      handleShowSummary(entry);
     }
   };
 
@@ -394,6 +414,60 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
+  const handleAskAboutTranscript = async (
+    entry: HistoryEntry,
+    question: string,
+  ) => {
+    const userMessage: ChatMessage = { role: "user", content: question };
+    const currentHistory = chatHistories[entry.id] || [];
+    const updatedHistory = [...currentHistory, userMessage];
+
+    // Optimistically update frontend history state
+    setChatHistories((prev) => ({
+      ...prev,
+      [entry.id]: updatedHistory,
+    }));
+    setIsChatting(true);
+
+    try {
+      const result = await commands.askAboutTranscription(
+        entry.id,
+        updatedHistory,
+      );
+      if (result.status === "ok") {
+        const assistantMessage: ChatMessage = {
+          role: "assistant",
+          content: result.data,
+        };
+        setChatHistories((prev) => ({
+          ...prev,
+          [entry.id]: [...(prev[entry.id] || []), assistantMessage],
+        }));
+      } else {
+        const errorMessage: ChatMessage = {
+          role: "assistant",
+          content: `Error: ${result.error}`,
+        };
+        setChatHistories((prev) => ({
+          ...prev,
+          [entry.id]: [...(prev[entry.id] || []), errorMessage],
+        }));
+      }
+    } catch (error: any) {
+      console.error("Failed to ask about transcript:", error);
+      const errorMessage: ChatMessage = {
+        role: "assistant",
+        content: `Error: ${error?.message || String(error)}`,
+      };
+      setChatHistories((prev) => ({
+        ...prev,
+        [entry.id]: [...(prev[entry.id] || []), errorMessage],
+      }));
+    } finally {
+      setIsChatting(false);
+    }
+  };
+
   let content: React.ReactNode;
 
   if (loading) {
@@ -423,6 +497,7 @@ export const HistorySettings: React.FC = () => {
               onRegenerateWithCustomPrompt={(prompt) =>
                 handleRegenerateWithCustomPrompt(entry, prompt)
               }
+              onAskAboutTranscript={() => handleOpenChat(entry)}
               isSummaryActive={activeSummaryEntry?.id === entry.id}
               isSummarizingThis={
                 isSummarizing && activeSummaryEntry?.id === entry.id
@@ -446,7 +521,11 @@ export const HistorySettings: React.FC = () => {
   return (
     <div
       className={`w-full flex flex-col md:flex-row gap-6 items-start transition-all duration-300 ${
-        activeSummaryEntry && isLargeScreen ? "max-w-7xl" : "max-w-3xl"
+        activeSummaryEntry && chatEntry && isLargeScreen
+          ? "max-w-[1400px]"
+          : activeSummaryEntry && isLargeScreen
+            ? "max-w-7xl"
+            : "max-w-3xl"
       } mx-auto`}
     >
       {/* Left side: History list */}
@@ -479,16 +558,27 @@ export const HistorySettings: React.FC = () => {
                 {t("settings.history.summaryTitle")}
               </h3>
             </div>
-            <button
-              onClick={() => {
-                setActiveSummaryEntry(null);
-                setSummaryText(null);
-              }}
-              className="text-text/50 hover:text-text cursor-pointer p-1 rounded hover:bg-mid-gray/10"
-              title="Close panel"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  setChatEntry(activeSummaryEntry);
+                }}
+                className="text-text/50 hover:text-logo-primary cursor-pointer p-1 rounded hover:bg-mid-gray/10 transition-colors"
+                title={t("settings.history.askAboutTranscript")}
+              >
+                <MessageSquare className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  setActiveSummaryEntry(null);
+                  setSummaryText(null);
+                }}
+                className="text-text/50 hover:text-text cursor-pointer p-1 rounded hover:bg-mid-gray/10"
+                title="Close panel"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div className="space-y-1">
@@ -503,7 +593,7 @@ export const HistorySettings: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex-1 min-h-[180px] overflow-y-auto bg-mid-gray/5 border border-mid-gray/10 rounded-lg p-3 relative text-sm text-text/80 select-text cursor-text">
+          <div className="flex-1 overflow-y-auto bg-mid-gray/5 border border-mid-gray/10 rounded-lg p-3 relative text-sm text-text/80 select-text cursor-text min-h-[180px]">
             {isSummarizing ? (
               <div className="flex flex-col items-center justify-center gap-3 text-text/40 py-8 h-full">
                 <Loader2 className="w-6 h-6 text-logo-primary animate-spin" />
@@ -596,15 +686,14 @@ export const HistorySettings: React.FC = () => {
                         setShowCustomPromptModal(false);
                         setCustomPromptInput("");
                       }}
-                      variant="secondary"
                       size="sm"
-                      className="text-xs px-3"
+                      variant="secondary"
                     >
-                      <X className="w-3 h-3" />
+                      {t("common.cancel")}
                     </Button>
                     <Button
                       onClick={() => {
-                        if (activeSummaryEntry && customPromptInput.trim()) {
+                        if (customPromptInput.trim() && activeSummaryEntry) {
                           handleRegenerateWithCustomPrompt(
                             activeSummaryEntry,
                             customPromptInput.trim(),
@@ -612,12 +701,9 @@ export const HistorySettings: React.FC = () => {
                         }
                       }}
                       disabled={!customPromptInput.trim() || isSummarizing}
-                      variant="secondary"
                       size="sm"
-                      className="text-xs px-3 flex items-center gap-1.5"
                     >
-                      <Send className="w-3 h-3" />
-                      <span>{t("settings.history.customPromptSubmit")}</span>
+                      {t("settings.history.customPromptSubmit")}
                     </Button>
                   </div>
                 </div>
@@ -625,6 +711,46 @@ export const HistorySettings: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Side-by-side Chat panel (on large screens) */}
+      {chatEntry && isLargeScreen && (
+        <div className="w-full md:w-80 lg:w-96 flex-shrink-0 max-h-[calc(100vh-120px)] bg-background border border-mid-gray/20 rounded-lg p-4 sticky top-4 flex flex-col gap-4 animate-in slide-in-from-right duration-300">
+          <ChatContent
+            entry={chatEntry}
+            onClose={() => setChatEntry(null)}
+            messages={chatHistories[chatEntry.id] || []}
+            onSendMessage={(question) =>
+              handleAskAboutTranscript(chatEntry, question)
+            }
+            isChatting={isChatting}
+            clearHistory={() => {
+              setChatHistories((prev) => ({
+                ...prev,
+                [chatEntry.id]: [],
+              }));
+            }}
+          />
+        </div>
+      )}
+
+      {/* Overlay Chat modal (on small screens) */}
+      {chatEntry && !isLargeScreen && (
+        <ChatOverlayModal
+          entry={chatEntry}
+          onClose={() => setChatEntry(null)}
+          messages={chatHistories[chatEntry.id] || []}
+          onSendMessage={(question) =>
+            handleAskAboutTranscript(chatEntry, question)
+          }
+          isChatting={isChatting}
+          clearHistory={() => {
+            setChatHistories((prev) => ({
+              ...prev,
+              [chatEntry.id]: [],
+            }));
+          }}
+        />
       )}
     </div>
   );
@@ -637,6 +763,7 @@ interface HistoryEntryProps {
   onShowSummary: () => void;
   onRegenerateSummary: () => void;
   onRegenerateWithCustomPrompt: (prompt: string) => void;
+  onAskAboutTranscript: () => void;
   isSummaryActive: boolean;
   isSummarizingThis: boolean;
   getAudioUrl: (fileName: string) => Promise<string | null>;
@@ -653,6 +780,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   onShowSummary,
   onRegenerateSummary,
   onRegenerateWithCustomPrompt,
+  onAskAboutTranscript,
   isSummaryActive,
   isSummarizingThis,
   getAudioUrl,
@@ -734,6 +862,13 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                 isSummarizingThis ? "animate-spin text-logo-primary" : ""
               }
             />
+          </IconButton>
+          <IconButton
+            onClick={onAskAboutTranscript}
+            disabled={!hasTranscription || retrying}
+            title={t("settings.history.askAboutTranscript")}
+          >
+            <MessageSquare width={16} height={16} />
           </IconButton>
           <IconButton
             onClick={onToggleSaved}
@@ -940,6 +1075,218 @@ const InlineSummaryActions: React.FC<{
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// Reusable Chat Content Component (Header, Messages, Input)
+interface ChatContentProps {
+  entry: HistoryEntry;
+  onClose: () => void;
+  messages: ChatMessage[];
+  onSendMessage: (question: string) => void;
+  isChatting: boolean;
+  clearHistory: () => void;
+  isOverlay?: boolean;
+}
+
+const ChatContent: React.FC<ChatContentProps> = ({
+  entry,
+  onClose,
+  messages,
+  onSendMessage,
+  isChatting,
+  clearHistory,
+  isOverlay = false,
+}) => {
+  const { t, i18n } = useTranslation();
+  const [input, setInput] = useState("");
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, isChatting]);
+
+  // Handle Escape key to close modal (only in overlay mode)
+  useEffect(() => {
+    if (!isOverlay) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, isOverlay]);
+
+  const handleSend = () => {
+    if (input.trim() && !isChatting) {
+      onSendMessage(input.trim());
+      setInput("");
+    }
+  };
+
+  const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
+
+  return (
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+      {/* Header */}
+      <div className="flex justify-between items-center pb-3 border-b border-mid-gray/10 bg-transparent flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-logo-primary animate-pulse" />
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-text truncate">
+              {t("settings.history.askAboutTranscript")}
+            </h3>
+            <p className="text-[10px] text-mid-gray truncate max-w-[180px] md:max-w-[240px]">
+              {entry.title || entry.file_name} • {formattedDate}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {messages.length > 0 && (
+            <button
+              onClick={clearHistory}
+              className="text-[10px] text-text/50 hover:text-red-500 cursor-pointer px-1.5 py-0.5 rounded hover:bg-mid-gray/10 transition-colors animate-in fade-in duration-200"
+            >
+              {t("settings.history.clearHistory")}
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="text-text/50 hover:text-text cursor-pointer px-2 py-1 rounded hover:bg-mid-gray/10 transition-colors flex items-center gap-1 text-xs"
+            title={t("common.close")}
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>{t("common.close")}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto py-3 space-y-3 min-h-[150px] scrollbar-thin scrollbar-thumb-mid-gray/20"
+      >
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-6 text-center text-text/40 space-y-2 animate-in fade-in duration-300">
+            <div className="w-10 h-10 rounded-full bg-logo-primary/10 flex items-center justify-center text-logo-primary">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-text/80">
+                {t("settings.history.noQuestionsYet")}
+              </p>
+              <p className="text-[10px] text-text/50 max-w-[200px] mx-auto leading-relaxed">
+                {t("settings.history.chatHint")}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {messages.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`flex ${
+              msg.role === "user" ? "justify-end" : "justify-start"
+            }`}
+          >
+            <div
+              className={`max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed shadow-sm ${
+                msg.role === "user"
+                  ? "bg-logo-primary text-white rounded-br-none"
+                  : "bg-mid-gray/10 text-text/90 rounded-bl-none border border-mid-gray/10"
+              }`}
+            >
+              <p className="whitespace-pre-wrap select-text cursor-text">
+                {msg.content}
+              </p>
+            </div>
+          </div>
+        ))}
+
+        {isChatting && (
+          <div className="flex justify-start">
+            <div className="bg-mid-gray/10 text-text/90 rounded-lg rounded-bl-none border border-mid-gray/10 px-3 py-2 text-xs shadow-sm">
+              <div className="flex items-center gap-1.5">
+                <Loader2 className="w-3 h-3 text-logo-primary animate-spin" />
+                <span className="text-text/50 font-medium">Thinking...</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input Bar */}
+      <div className="pt-3 border-t border-mid-gray/10 bg-transparent flex gap-2 items-center flex-shrink-0">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          placeholder={t("settings.history.questionPlaceholder")}
+          disabled={isChatting}
+          className="flex-1 rounded-md border border-mid-gray/25 bg-background px-3 py-2 text-xs text-text placeholder:text-text/30 focus:outline-none focus:ring-2 focus:ring-logo-primary/30 focus:border-logo-primary disabled:opacity-50 transition-all"
+          autoFocus={isOverlay}
+        />
+        <button
+          onClick={handleSend}
+          disabled={!input.trim() || isChatting}
+          className="rounded-md bg-logo-primary text-white p-2 hover:bg-logo-primary/90 disabled:opacity-40 disabled:hover:bg-logo-primary transition-all flex items-center justify-center shadow-md cursor-pointer disabled:cursor-not-allowed"
+        >
+          <Send className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Overlay Chat Modal Component (for mobile/tablet width screens)
+const ChatOverlayModal: React.FC<{
+  entry: HistoryEntry;
+  onClose: () => void;
+  messages: ChatMessage[];
+  onSendMessage: (question: string) => void;
+  isChatting: boolean;
+  clearHistory: () => void;
+}> = ({
+  entry,
+  onClose,
+  messages,
+  onSendMessage,
+  isChatting,
+  clearHistory,
+}) => {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="bg-background border border-mid-gray/20 rounded-xl shadow-2xl w-full max-w-2xl flex flex-col p-4 h-[60vh] max-h-[70vh] animate-in zoom-in-95 duration-200 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <ChatContent
+          entry={entry}
+          onClose={onClose}
+          messages={messages}
+          onSendMessage={onSendMessage}
+          isChatting={isChatting}
+          clearHistory={clearHistory}
+          isOverlay={true}
+        />
+      </div>
     </div>
   );
 };
