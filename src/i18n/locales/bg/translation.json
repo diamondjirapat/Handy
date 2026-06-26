@@ -487,7 +487,15 @@
       "askTranscriptCopied": "Answer copied to clipboard",
       "askTranscriptClearChat": "Clear chat",
       "clearHistory": "Clear History",
-      "chatHint": "Ask any question about this audio transcription. The AI will use the full text as context."
+      "chatHint": "Ask any question about this audio transcription. The AI will use the full text as context.",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "clickToCollapse": "Click to collapse",
+      "importTranscript": "Import Transcript",
+      "importTranscriptDialogTitle": "Select Transcript Text File",
+      "importEmptyError": "Selected text file is empty",
+      "importSuccess": "Transcript imported successfully",
+      "importError": "Failed to import transcript"
     },
     "debug": {
       "title": "Отстраняване",
@@ -525,7 +533,9 @@
       "historyLimit": {
         "title": "Лимит на историята",
         "description": "Максимален брой записи в историята за пазене",
-        "entries": "записа"
+        "entries": "записа",
+        "noLimit": "No Limit",
+        "custom": "Custom"
       },
       "recordingRetention": {
         "title": "Автоматично изтриване на записи",

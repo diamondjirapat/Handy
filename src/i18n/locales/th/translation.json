@@ -491,7 +491,15 @@
       "noQuestionsYet": "Ask a question about this transcript",
       "questionPlaceholder": "Ask a question...",
       "clearHistory": "Clear History",
-      "chatHint": "Ask any question about this audio transcription. The AI will use the full text as context."
+      "chatHint": "Ask any question about this audio transcription. The AI will use the full text as context.",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "clickToCollapse": "Click to collapse",
+      "importTranscript": "Import Transcript",
+      "importTranscriptDialogTitle": "Select Transcript Text File",
+      "importEmptyError": "Selected text file is empty",
+      "importSuccess": "Transcript imported successfully",
+      "importError": "Failed to import transcript"
     },
     "summaryApi": {
       "title": "การตั้งค่าสรุป AI",
@@ -546,7 +554,9 @@
       "historyLimit": {
         "title": "ขีดจำกัดประวัติ",
         "description": "จำนวนรายการประวัติสูงสุดที่จะเก็บ",
-        "entries": "รายการ"
+        "entries": "รายการ",
+        "noLimit": "No Limit",
+        "custom": "Custom"
       },
       "recordingRetention": {
         "title": "ลบการบันทึกอัตโนมัติ",

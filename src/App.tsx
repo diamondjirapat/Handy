@@ -38,7 +38,7 @@ function App() {
   // (vs a new user who needs full onboarding including model selection)
   const [isReturningUser, setIsReturningUser] = useState(false);
   const [currentSection, setCurrentSection] =
-    useState<SidebarSection>("general");
+    useState<SidebarSection>("history");
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
@@ -52,30 +52,33 @@ function App() {
   const [pendingFiles, setPendingFiles] = useState<string[]>([]);
   const [isProcessingMultiple, setIsProcessingMultiple] = useState(false);
 
-  const handleProcessMultipleFiles = useCallback(async (files: string[], combine: boolean) => {
-    setIsProcessingMultiple(true);
-    try {
-      const result = await commands.uploadMultipleAudioFiles(files, combine);
-      if (result.status === "ok") {
-        const desc = combine
-          ? result.data.transcriptions[0]?.slice(0, 200)
-          : result.data.transcriptions.map((t) => t.slice(0, 50)).join(" | ");
-        toast.success(t("footer.uploadAudioSuccess"), {
-          description: desc,
-        });
-        setPendingFiles([]);
-      } else {
-        toast.error(t("footer.uploadAudioError"), {
-          description: String(result.error),
-        });
+  const handleProcessMultipleFiles = useCallback(
+    async (files: string[], combine: boolean) => {
+      setIsProcessingMultiple(true);
+      try {
+        const result = await commands.uploadMultipleAudioFiles(files, combine);
+        if (result.status === "ok") {
+          const desc = combine
+            ? result.data.transcriptions[0]?.slice(0, 200)
+            : result.data.transcriptions.map((t) => t.slice(0, 50)).join(" | ");
+          toast.success(t("footer.uploadAudioSuccess"), {
+            description: desc,
+          });
+          setPendingFiles([]);
+        } else {
+          toast.error(t("footer.uploadAudioError"), {
+            description: String(result.error),
+          });
+        }
+      } catch (error) {
+        console.error("Failed to process multiple audio files:", error);
+        toast.error(t("footer.uploadAudioError"));
+      } finally {
+        setIsProcessingMultiple(false);
       }
-    } catch (error) {
-      console.error("Failed to process multiple audio files:", error);
-      toast.error(t("footer.uploadAudioError"));
-    } finally {
-      setIsProcessingMultiple(false);
-    }
-  }, [t]);
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (onboardingStep !== "done") return;

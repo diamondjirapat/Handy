@@ -1,6 +1,6 @@
 use crate::actions::process_transcription_output;
 use crate::managers::{
-    history::{HistoryManager, PaginatedHistory},
+    history::{HistoryEntry, HistoryManager, PaginatedHistory},
     transcription::TranscriptionManager,
 };
 use std::sync::Arc;
@@ -151,4 +151,17 @@ pub async fn update_recording_retention_period(
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn import_transcription_text(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    text: String,
+) -> Result<HistoryEntry, String> {
+    let file_name = format!("imported_{}.txt", chrono::Utc::now().timestamp());
+    history_manager
+        .save_entry(file_name, text, false, None, None)
+        .map_err(|e| e.to_string())
 }

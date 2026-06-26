@@ -487,7 +487,15 @@
       "askTranscriptCopied": "Answer copied to clipboard",
       "askTranscriptClearChat": "Clear chat",
       "clearHistory": "Clear History",
-      "chatHint": "Ask any question about this audio transcription. The AI will use the full text as context."
+      "chatHint": "Ask any question about this audio transcription. The AI will use the full text as context.",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "clickToCollapse": "Click to collapse",
+      "importTranscript": "Import Transcript",
+      "importTranscriptDialogTitle": "Select Transcript Text File",
+      "importEmptyError": "Selected text file is empty",
+      "importSuccess": "Transcript imported successfully",
+      "importError": "Failed to import transcript"
     },
     "debug": {
       "title": "디버그",
@@ -525,7 +533,9 @@
       "historyLimit": {
         "title": "히스토리 제한",
         "description": "보관할 최대 히스토리 항목 수",
-        "entries": "항목"
+        "entries": "항목",
+        "noLimit": "제한 없음",
+        "custom": "사용자 정의"
       },
       "recordingRetention": {
         "title": "녹음 자동 삭제",

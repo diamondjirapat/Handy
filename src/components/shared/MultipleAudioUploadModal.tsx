@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUp, ArrowDown, Trash2, FileAudio, Loader2, X } from "lucide-react";
+import {
+  ArrowUp,
+  ArrowDown,
+  Trash2,
+  FileAudio,
+  Loader2,
+  X,
+} from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
 
 interface MultipleAudioUploadModalProps {
@@ -165,7 +172,9 @@ const MultipleAudioUploadModal: React.FC<MultipleAudioUploadModalProps> = ({
         <div className="flex justify-between items-start pb-4 border-b border-border">
           <div>
             <h2 className="text-lg font-bold text-text">
-              {filePaths.length === 1 ? "Transcribe Recording" : t("footer.multipleUploadTitle")}
+              {filePaths.length === 1
+                ? "Transcribe Recording"
+                : t("footer.multipleUploadTitle")}
             </h2>
             <p className="text-xs text-text/60 mt-1">
               {filePaths.length === 1
@@ -282,7 +291,10 @@ const MultipleAudioUploadModal: React.FC<MultipleAudioUploadModalProps> = ({
                         </span>
                       )}
                       <FileAudio className="w-4 h-4 text-logo-primary flex-shrink-0" />
-                      <span className="text-xs font-medium text-text truncate" title={path}>
+                      <span
+                        className="text-xs font-medium text-text truncate"
+                        title={path}
+                      >
                         {getFileName(path)}
                       </span>
                     </div>

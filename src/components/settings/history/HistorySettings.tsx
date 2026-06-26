@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import {
   Check,
@@ -15,6 +15,7 @@ import {
   X,
   Brain,
   Loader2,
+  Upload,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -25,20 +26,22 @@ import {
   type HistoryUpdatePayload,
   type ChatMessage,
 } from "@/bindings";
-import { useOsType } from "@/hooks/useOsType";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
 
 const IconButton: React.FC<{
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;
   title: string;
   disabled?: boolean;
   active?: boolean;
   children: React.ReactNode;
 }> = ({ onClick, title, disabled, active, children }) => (
   <button
-    onClick={onClick}
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick(e);
+    }}
     disabled={disabled}
     className={`p-1.5 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20 ${
       active
@@ -74,9 +77,29 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   </Button>
 );
 
+interface ImportTranscriptButtonProps {
+  onClick: () => void;
+  label: string;
+}
+
+const ImportTranscriptButton: React.FC<ImportTranscriptButtonProps> = ({
+  onClick,
+  label,
+}) => (
+  <Button
+    onClick={onClick}
+    variant="secondary"
+    size="sm"
+    className="flex items-center gap-2"
+    title={label}
+  >
+    <Upload className="w-4 h-4" />
+    <span>{label}</span>
+  </Button>
+);
+
 export const HistorySettings: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const osType = useOsType();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -85,20 +108,31 @@ export const HistorySettings: React.FC = () => {
   const loadingRef = useRef(false);
 
   // States for right-side AI Summary panel
-  const [activeSummaryEntry, setActiveSummaryEntry] =
-    useState<HistoryEntry | null>(null);
-  const [summaryText, setSummaryText] = useState<string | null>(null);
-  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [activeEntry, setActiveEntry] = useState<HistoryEntry | null>(null);
+  const [summaryTexts, setSummaryTexts] = useState<
+    Record<number, string | null>
+  >({});
+  const [summarizingStates, setSummarizingStates] = useState<
+    Record<number, boolean>
+  >({});
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768);
   const [showCustomPromptModal, setShowCustomPromptModal] = useState(false);
   const [customPromptInput, setCustomPromptInput] = useState("");
 
-  // States for "Ask about transcript" overlay & memory
-  const [chatEntry, setChatEntry] = useState<HistoryEntry | null>(null);
+  // Mobile-specific panels
+  const [showMobileSummary, setShowMobileSummary] = useState(false);
+  const [mobileChatEntry, setMobileChatEntry] = useState<HistoryEntry | null>(
+    null,
+  );
+
+  // States for Chat memory
   const [chatHistories, setChatHistories] = useState<
     Record<number, ChatMessage[]>
   >({});
-  const [isChatting, setIsChatting] = useState(false);
+  const [chatInputs, setChatInputs] = useState<Record<number, string>>({});
+  const [chattingStates, setChattingStates] = useState<Record<number, boolean>>(
+    {},
+  );
 
   useEffect(() => {
     const handleResize = () => {
@@ -107,6 +141,43 @@ export const HistorySettings: React.FC = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!isLargeScreen || !activeEntry) return;
+
+      const target = event.target as HTMLElement;
+
+      // Ignore scrollbar clicks to prevent accidental collapses when scrolling
+      const rect = target.getBoundingClientRect();
+      const isScrollbarClick =
+        event.clientX > rect.left + target.clientWidth ||
+        event.clientY > rect.top + target.clientHeight;
+      if (isScrollbarClick) return;
+
+      // Determine if the clicked element is inside any protected/active view components
+      const isInsideProtected =
+        target.closest(".history-card") ||
+        target.closest(".summary-panel") ||
+        target.closest(".chat-panel") ||
+        target.closest(".history-header") ||
+        target.closest(".sonner-toast") ||
+        target.closest("[role='status']") ||
+        target.closest(".sidebar-container") ||
+        target.closest(".footer-container") ||
+        target.closest("[role='listbox']") ||
+        target.closest(".fixed");
+
+      if (!isInsideProtected) {
+        setActiveEntry(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [activeEntry, isLargeScreen]);
 
   // Keep ref in sync for use in IntersectionObserver callback
   useEffect(() => {
@@ -169,15 +240,80 @@ export const HistorySettings: React.FC = () => {
     return () => observer.disconnect();
   }, [loading, hasMore, loadPage]);
 
+  // Sync summary when activeEntry changes
+  useEffect(() => {
+    if (!activeEntry) return;
+
+    const entryId = activeEntry.id;
+
+    // If summary is already in state cache, do nothing
+    if (summaryTexts[entryId] !== undefined) {
+      return;
+    }
+
+    // Check if the loaded entry already has a summary_text
+    if (activeEntry.summary_text && activeEntry.summary_text.trim()) {
+      setSummaryTexts((prev) => ({
+        ...prev,
+        [entryId]: activeEntry.summary_text,
+      }));
+      return;
+    }
+
+    // Start fetching
+    setSummarizingStates((prev) => ({ ...prev, [entryId]: true }));
+    setSummaryTexts((prev) => ({ ...prev, [entryId]: null }));
+
+    const fetchSummary = async () => {
+      try {
+        const result = await commands.summarizeTranscription(
+          entryId,
+          false,
+          null,
+        );
+        if (result.status === "ok") {
+          setSummaryTexts((prev) => ({
+            ...prev,
+            [entryId]: result.data,
+          }));
+          setEntries((prev) =>
+            prev.map((e) =>
+              e.id === entryId ? { ...e, summary_text: result.data } : e,
+            ),
+          );
+        } else {
+          setSummaryTexts((prev) => ({
+            ...prev,
+            [entryId]: null,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to summarize:", error);
+        setSummaryTexts((prev) => ({
+          ...prev,
+          [entryId]: null,
+        }));
+      } finally {
+        setSummarizingStates((prev) => ({ ...prev, [entryId]: false }));
+      }
+    };
+
+    fetchSummary();
+  }, [activeEntry, summaryTexts]);
+
   // Listen for new entries added from the transcription pipeline
   useEffect(() => {
     const unlisten = events.historyUpdatePayload.listen((event) => {
       const payload: HistoryUpdatePayload = event.payload;
       if (payload.action === "added") {
         setEntries((prev) => [payload.entry, ...prev]);
+        setActiveEntry(payload.entry);
       } else if (payload.action === "updated") {
         setEntries((prev) =>
           prev.map((e) => (e.id === payload.entry.id ? payload.entry : e)),
+        );
+        setActiveEntry((prev) =>
+          prev && prev.id === payload.entry.id ? payload.entry : prev,
         );
       }
     });
@@ -217,34 +353,52 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
-  const getAudioUrl = useCallback(
-    async (fileName: string) => {
-      try {
-        const result = await commands.getAudioFilePath(fileName);
-        if (result.status === "ok") {
-          if (osType === "linux") {
-            const fileData = await readFile(result.data);
-            const blob = new Blob([fileData], { type: "audio/wav" });
-            return URL.createObjectURL(blob);
-          }
-          return convertFileSrc(result.data, "asset");
-        }
-        return null;
-      } catch (error) {
-        console.error("Failed to get audio file path:", error);
-        return null;
+  const getAudioUrl = useCallback(async (fileName: string) => {
+    try {
+      const result = await commands.getAudioFilePath(fileName);
+      if (result.status === "ok") {
+        const fileData = await readFile(result.data);
+        const blob = new Blob([fileData], { type: "audio/wav" });
+        return URL.createObjectURL(blob);
       }
-    },
-    [osType],
-  );
+      return null;
+    } catch (error) {
+      console.error("Failed to get audio file path:", error);
+      return null;
+    }
+  }, []);
 
   const deleteAudioEntry = async (id: number) => {
-    // Optimistically remove
+    // Optimically remove
     setEntries((prev) => prev.filter((e) => e.id !== id));
-    if (activeSummaryEntry?.id === id) {
-      setActiveSummaryEntry(null);
-      setSummaryText(null);
+    if (activeEntry?.id === id) {
+      setActiveEntry(null);
     }
+    setSummaryTexts((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setSummarizingStates((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setChatHistories((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setChatInputs((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setChattingStates((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     try {
       const result = await commands.deleteHistoryEntry(id);
       if (result.status !== "ok") {
@@ -275,102 +429,107 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
-  // Handler for showing/fetching summary
-  const handleShowSummary = async (entry: HistoryEntry) => {
-    if (activeSummaryEntry?.id === entry.id) {
-      // Toggle off if clicking the same entry
-      setActiveSummaryEntry(null);
-      setSummaryText(null);
-      setChatEntry(null); // Close companion chat panel too
-      return;
-    }
-
-    setActiveSummaryEntry(entry);
-    if (chatEntry) {
-      setChatEntry(entry); // Sync chat panel to the new entry
-    }
-
-    // If summary is already saved in the database, use it directly
-    if (entry.summary_text && entry.summary_text.trim()) {
-      setSummaryText(entry.summary_text);
-      setIsSummarizing(false);
-      return;
-    }
-
-    setSummaryText(null);
-    setIsSummarizing(true);
-
+  const handleImportTranscript = async () => {
     try {
-      const result = await commands.summarizeTranscription(
-        entry.id,
-        false,
-        null,
-      );
+      const selected = await open({
+        title: t("settings.history.importTranscriptDialogTitle"),
+        multiple: false,
+        filters: [
+          {
+            name: "Text Files",
+            extensions: ["txt", "md"],
+          },
+        ],
+      });
+
+      if (!selected) return;
+
+      const filePath = Array.isArray(selected) ? selected[0] : selected;
+      if (!filePath) return;
+
+      const fileData = await readFile(filePath);
+      const decoder = new TextDecoder("utf-8");
+      const text = decoder.decode(fileData);
+
+      if (!text.trim()) {
+        toast.error(t("settings.history.importEmptyError"));
+        return;
+      }
+
+      const result = await commands.importTranscriptionText(text);
       if (result.status === "ok") {
-        setSummaryText(result.data);
-        // Update the summary text of the entry in our local list immediately
-        setEntries((prev) =>
-          prev.map((e) =>
-            e.id === entry.id ? { ...e, summary_text: result.data } : e,
-          ),
-        );
+        toast.success(t("settings.history.importSuccess"));
       } else {
-        toast.error(t("settings.history.summaryError"), {
+        toast.error(t("settings.history.importError"), {
           description: String(result.error),
         });
-        setActiveSummaryEntry(null);
       }
-    } catch (error: any) {
-      console.error("Failed to summarize:", error);
-      toast.error(t("settings.history.summaryError"), {
-        description: error?.message || String(error),
+    } catch (error) {
+      console.error("Failed to import transcript:", error);
+      toast.error(t("settings.history.importError"), {
+        description: String(error),
       });
-      setActiveSummaryEntry(null);
-    } finally {
-      setIsSummarizing(false);
+    }
+  };
+
+  // Handler for showing/fetching summary
+  const handleShowSummary = async (entry: HistoryEntry) => {
+    if (isLargeScreen) {
+      if (activeEntry?.id === entry.id) {
+        setActiveEntry(null);
+      } else {
+        setActiveEntry(entry);
+      }
+    } else {
+      if (activeEntry?.id === entry.id) {
+        // Toggle off if clicking the same entry
+        setShowMobileSummary(!showMobileSummary);
+      } else {
+        setActiveEntry(entry);
+        setShowMobileSummary(true);
+      }
     }
   };
 
   const handleOpenChat = (entry: HistoryEntry) => {
-    setChatEntry(entry);
-    if (activeSummaryEntry?.id !== entry.id) {
-      handleShowSummary(entry);
+    if (isLargeScreen) {
+      if (activeEntry?.id === entry.id) {
+        setActiveEntry(null);
+      } else {
+        setActiveEntry(entry);
+      }
+    } else {
+      setMobileChatEntry(entry);
     }
   };
 
   const handleRegenerateSummary = async (entry: HistoryEntry) => {
-    setActiveSummaryEntry(entry);
-    setSummaryText(null);
-    setIsSummarizing(true);
+    const entryId = entry.id;
+    setSummaryTexts((prev) => ({ ...prev, [entryId]: null }));
+    setSummarizingStates((prev) => ({ ...prev, [entryId]: true }));
 
     try {
-      const result = await commands.summarizeTranscription(
-        entry.id,
-        true,
-        null,
-      );
+      const result = await commands.summarizeTranscription(entryId, true, null);
       if (result.status === "ok") {
-        setSummaryText(result.data);
+        setSummaryTexts((prev) => ({ ...prev, [entryId]: result.data }));
         // Update the summary text of the entry in our local list immediately
         setEntries((prev) =>
           prev.map((e) =>
-            e.id === entry.id ? { ...e, summary_text: result.data } : e,
+            e.id === entryId ? { ...e, summary_text: result.data } : e,
           ),
         );
       } else {
         toast.error(t("settings.history.summaryError"), {
           description: String(result.error),
         });
-        setActiveSummaryEntry(null);
       }
     } catch (error: any) {
       console.error("Failed to regenerate summary:", error);
       toast.error(t("settings.history.summaryError"), {
         description: error?.message || String(error),
       });
-      setActiveSummaryEntry(null);
     } finally {
-      setIsSummarizing(false);
+      setSummarizingStates((prev) => ({ ...prev, [entryId]: false }));
     }
   };
 
@@ -378,39 +537,37 @@ export const HistorySettings: React.FC = () => {
     entry: HistoryEntry,
     prompt: string,
   ) => {
-    setActiveSummaryEntry(entry);
-    setSummaryText(null);
-    setIsSummarizing(true);
+    const entryId = entry.id;
+    setSummaryTexts((prev) => ({ ...prev, [entryId]: null }));
+    setSummarizingStates((prev) => ({ ...prev, [entryId]: true }));
     setShowCustomPromptModal(false);
     setCustomPromptInput("");
 
     try {
       const result = await commands.summarizeTranscription(
-        entry.id,
+        entryId,
         true,
         prompt,
       );
       if (result.status === "ok") {
-        setSummaryText(result.data);
+        setSummaryTexts((prev) => ({ ...prev, [entryId]: result.data }));
         setEntries((prev) =>
           prev.map((e) =>
-            e.id === entry.id ? { ...e, summary_text: result.data } : e,
+            e.id === entryId ? { ...e, summary_text: result.data } : e,
           ),
         );
       } else {
         toast.error(t("settings.history.summaryError"), {
           description: String(result.error),
         });
-        setActiveSummaryEntry(null);
       }
     } catch (error: any) {
       console.error("Failed to regenerate summary with custom prompt:", error);
       toast.error(t("settings.history.summaryError"), {
         description: error?.message || String(error),
       });
-      setActiveSummaryEntry(null);
     } finally {
-      setIsSummarizing(false);
+      setSummarizingStates((prev) => ({ ...prev, [entryId]: false }));
     }
   };
 
@@ -418,20 +575,24 @@ export const HistorySettings: React.FC = () => {
     entry: HistoryEntry,
     question: string,
   ) => {
+    const entryId = entry.id;
     const userMessage: ChatMessage = { role: "user", content: question };
-    const currentHistory = chatHistories[entry.id] || [];
+    const currentHistory = chatHistories[entryId] || [];
     const updatedHistory = [...currentHistory, userMessage];
 
     // Optimistically update frontend history state
     setChatHistories((prev) => ({
       ...prev,
-      [entry.id]: updatedHistory,
+      [entryId]: updatedHistory,
     }));
-    setIsChatting(true);
+    setChattingStates((prev) => ({
+      ...prev,
+      [entryId]: true,
+    }));
 
     try {
       const result = await commands.askAboutTranscription(
-        entry.id,
+        entryId,
         updatedHistory,
       );
       if (result.status === "ok") {
@@ -441,7 +602,7 @@ export const HistorySettings: React.FC = () => {
         };
         setChatHistories((prev) => ({
           ...prev,
-          [entry.id]: [...(prev[entry.id] || []), assistantMessage],
+          [entryId]: [...(prev[entryId] || []), assistantMessage],
         }));
       } else {
         const errorMessage: ChatMessage = {
@@ -450,7 +611,7 @@ export const HistorySettings: React.FC = () => {
         };
         setChatHistories((prev) => ({
           ...prev,
-          [entry.id]: [...(prev[entry.id] || []), errorMessage],
+          [entryId]: [...(prev[entryId] || []), errorMessage],
         }));
       }
     } catch (error: any) {
@@ -461,10 +622,13 @@ export const HistorySettings: React.FC = () => {
       };
       setChatHistories((prev) => ({
         ...prev,
-        [entry.id]: [...(prev[entry.id] || []), errorMessage],
+        [entryId]: [...(prev[entryId] || []), errorMessage],
       }));
     } finally {
-      setIsChatting(false);
+      setChattingStates((prev) => ({
+        ...prev,
+        [entryId]: false,
+      }));
     }
   };
 
@@ -472,20 +636,20 @@ export const HistorySettings: React.FC = () => {
 
   if (loading) {
     content = (
-      <div className="px-4 py-3 text-center text-text/60">
+      <div className="bg-background border border-mid-gray/20 rounded-lg px-4 py-6 text-center text-text/60 shadow-sm">
         {t("settings.history.loading")}
       </div>
     );
   } else if (entries.length === 0) {
     content = (
-      <div className="px-4 py-3 text-center text-text/60">
+      <div className="bg-background border border-mid-gray/20 rounded-lg px-4 py-6 text-center text-text/60 shadow-sm">
         {t("settings.history.empty")}
       </div>
     );
   } else {
     content = (
       <>
-        <div className="divide-y divide-mid-gray/20">
+        <div className="space-y-4">
           {entries.map((entry) => (
             <HistoryEntryComponent
               key={entry.id}
@@ -498,17 +662,21 @@ export const HistorySettings: React.FC = () => {
                 handleRegenerateWithCustomPrompt(entry, prompt)
               }
               onAskAboutTranscript={() => handleOpenChat(entry)}
-              isSummaryActive={activeSummaryEntry?.id === entry.id}
-              isSummarizingThis={
-                isSummarizing && activeSummaryEntry?.id === entry.id
-              }
+              isActive={activeEntry?.id === entry.id}
+              onActivate={() => setActiveEntry(entry)}
+              onCollapse={() => {
+                setActiveEntry(null);
+                if (!isLargeScreen) {
+                  setShowMobileSummary(false);
+                }
+              }}
+              isSummarizingThis={summarizingStates[entry.id] || false}
               getAudioUrl={getAudioUrl}
               deleteAudio={deleteAudioEntry}
               retryTranscription={retryHistoryEntry}
               showInlineSummary={!isLargeScreen}
-              summaryText={
-                activeSummaryEntry?.id === entry.id ? summaryText : null
-              }
+              summaryText={summaryTexts[entry.id] || null}
+              isLargeScreen={isLargeScreen}
             />
           ))}
         </div>
@@ -521,57 +689,58 @@ export const HistorySettings: React.FC = () => {
   return (
     <div
       className={`w-full flex flex-col md:flex-row gap-6 items-start transition-all duration-300 ${
-        activeSummaryEntry && chatEntry && isLargeScreen
-          ? "max-w-[1400px]"
-          : activeSummaryEntry && isLargeScreen
-            ? "max-w-7xl"
-            : "max-w-3xl"
+        isLargeScreen ? "max-w-[1400px]" : "max-w-3xl"
       } mx-auto`}
     >
       {/* Left side: History list */}
-      <div className="transition-all duration-300 max-w-3xl w-full flex-shrink-0 space-y-6">
+      <div
+        onClick={() => {
+          if (isLargeScreen) {
+            setActiveEntry(null);
+          }
+        }}
+        className="transition-all duration-300 max-w-3xl w-full flex-grow min-w-0 space-y-6"
+      >
         <div className="space-y-2">
-          <div className="px-4 flex items-center justify-between">
+          <div
+            className="px-4 flex items-center justify-between history-header"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div>
               <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
                 {t("settings.history.title")}
               </h2>
             </div>
-            <OpenRecordingsButton
-              onClick={openRecordingsFolder}
-              label={t("settings.history.openFolder")}
-            />
+            <div className="flex items-center gap-2">
+              <ImportTranscriptButton
+                onClick={handleImportTranscript}
+                label={t("settings.history.importTranscript")}
+              />
+              <OpenRecordingsButton
+                onClick={openRecordingsFolder}
+                label={t("settings.history.openFolder")}
+              />
+            </div>
           </div>
-          <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
-            {content}
-          </div>
+          <div className="overflow-visible">{content}</div>
         </div>
       </div>
 
       {/* Right side: AI Summary panel */}
-      {activeSummaryEntry && isLargeScreen && (
-        <div className="w-full md:w-80 lg:w-96 flex-shrink-0 max-h-[calc(100vh-120px)] bg-background border border-mid-gray/20 rounded-lg p-4 sticky top-4 flex flex-col gap-4 animate-in slide-in-from-right duration-300">
-          <div className="flex justify-between items-center pb-2 border-b border-mid-gray/20">
-            <div className="flex items-center gap-2">
-              <Brain className="w-4 h-4 text-logo-primary" />
-              <h3 className="text-sm font-semibold text-text">
-                {t("settings.history.summaryTitle")}
-              </h3>
-            </div>
-            <div className="flex items-center gap-1">
+      {isLargeScreen &&
+        entries.length > 0 &&
+        (activeEntry ? (
+          <div className="w-full md:w-80 lg:w-96 flex-shrink-0 max-h-[calc(100vh-120px)] bg-background border border-mid-gray/20 rounded-lg p-4 sticky top-4 flex flex-col gap-4 animate-in slide-in-from-right duration-300 summary-panel">
+            <div className="flex justify-between items-center pb-2 border-b border-mid-gray/20">
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-logo-primary" />
+                <h3 className="text-sm font-semibold text-text">
+                  {t("settings.history.summaryTitle")}
+                </h3>
+              </div>
               <button
                 onClick={() => {
-                  setChatEntry(activeSummaryEntry);
-                }}
-                className="text-text/50 hover:text-logo-primary cursor-pointer p-1 rounded hover:bg-mid-gray/10 transition-colors"
-                title={t("settings.history.askAboutTranscript")}
-              >
-                <MessageSquare className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => {
-                  setActiveSummaryEntry(null);
-                  setSummaryText(null);
+                  setActiveEntry(null);
                 }}
                 className="text-text/50 hover:text-text cursor-pointer p-1 rounded hover:bg-mid-gray/10"
                 title="Close panel"
@@ -579,177 +748,206 @@ export const HistorySettings: React.FC = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
-          </div>
 
-          <div className="space-y-1">
-            <div className="text-xs font-medium text-logo-primary truncate">
-              {activeSummaryEntry.title || activeSummaryEntry.file_name}
+            <div className="space-y-1">
+              <div className="text-xs font-medium text-logo-primary truncate">
+                {activeEntry.title || activeEntry.file_name}
+              </div>
+              <div className="text-[10px] text-mid-gray">
+                {formatDateTime(String(activeEntry.timestamp), i18n.language)}
+              </div>
             </div>
-            <div className="text-[10px] text-mid-gray">
-              {formatDateTime(
-                String(activeSummaryEntry.timestamp),
-                i18n.language,
+
+            <div className="flex-1 overflow-y-auto bg-mid-gray/5 border border-mid-gray/10 rounded-lg p-3 relative text-sm text-text/80 select-text cursor-text min-h-[180px]">
+              {summarizingStates[activeEntry.id] ? (
+                <div className="flex flex-col items-center justify-center gap-3 text-text/40 py-8 h-full">
+                  <Loader2 className="w-6 h-6 text-logo-primary animate-spin" />
+                  <span className="text-xs">
+                    {t("settings.history.summarizing")}
+                  </span>
+                </div>
+              ) : summaryTexts[activeEntry.id] ? (
+                <p className="whitespace-pre-wrap leading-relaxed">
+                  {summaryTexts[activeEntry.id]}
+                </p>
+              ) : (
+                <div className="text-center py-8 text-text/30 text-xs">
+                  {t("settings.history.noSummary")}
+                </div>
               )}
             </div>
-          </div>
 
-          <div className="flex-1 overflow-y-auto bg-mid-gray/5 border border-mid-gray/10 rounded-lg p-3 relative text-sm text-text/80 select-text cursor-text min-h-[180px]">
-            {isSummarizing ? (
-              <div className="flex flex-col items-center justify-center gap-3 text-text/40 py-8 h-full">
-                <Loader2 className="w-6 h-6 text-logo-primary animate-spin" />
-                <span className="text-xs">
-                  {t("settings.history.summarizing")}
-                </span>
-              </div>
-            ) : summaryText ? (
-              <p className="whitespace-pre-wrap leading-relaxed">
-                {summaryText}
-              </p>
-            ) : (
-              <div className="text-center py-8 text-text/30 text-xs">
-                {t("settings.history.noSummary")}
-              </div>
-            )}
-          </div>
-
-          {summaryText && (
-            <div className="flex flex-col gap-2 w-full flex-shrink-0">
-              <div className="flex gap-2 w-full">
-                <Button
-                  onClick={() => {
-                    if (activeSummaryEntry) {
-                      handleRegenerateSummary(activeSummaryEntry);
-                    }
-                  }}
-                  disabled={isSummarizing}
-                  variant="secondary"
-                  size="sm"
-                  className="flex-1 flex items-center justify-center gap-1.5"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>{t("settings.history.regenerateSummary")}</span>
-                </Button>
-                <Button
-                  onClick={() => setShowCustomPromptModal((v) => !v)}
-                  disabled={isSummarizing}
-                  variant="secondary"
-                  size="sm"
-                  className="flex-1 flex items-center justify-center gap-1.5"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  <span>{t("settings.history.regenerateWithPrompt")}</span>
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (summaryText) {
-                      navigator.clipboard.writeText(summaryText);
-                      toast.success(t("settings.history.summaryCopied"));
-                    }
-                  }}
-                  variant="secondary"
-                  size="sm"
-                  className="flex-1 flex items-center justify-center gap-1.5"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>{t("settings.history.copySummary")}</span>
-                </Button>
-              </div>
-
-              {showCustomPromptModal && (
-                <div className="flex flex-col gap-2 p-3 bg-mid-gray/5 border border-mid-gray/15 rounded-lg animate-in fade-in slide-in-from-top-2 duration-200">
-                  <label className="text-xs font-medium text-text/70">
-                    {t("settings.history.customPromptTitle")}
-                  </label>
-                  <textarea
-                    value={customPromptInput}
-                    onChange={(e) => setCustomPromptInput(e.target.value)}
-                    placeholder={t("settings.history.customPromptPlaceholder")}
-                    className="w-full min-h-[72px] max-h-32 resize-y rounded-md border border-mid-gray/20 bg-background px-3 py-2 text-xs text-text placeholder:text-text/30 focus:outline-none focus:ring-1 focus:ring-logo-primary/40 focus:border-logo-primary/40"
-                    onKeyDown={(e) => {
-                      if (
-                        e.key === "Enter" &&
-                        !e.shiftKey &&
-                        customPromptInput.trim() &&
-                        activeSummaryEntry
-                      ) {
-                        e.preventDefault();
-                        handleRegenerateWithCustomPrompt(
-                          activeSummaryEntry,
-                          customPromptInput.trim(),
+            {summaryTexts[activeEntry.id] && (
+              <div className="flex flex-col gap-2 w-full flex-shrink-0">
+                <div className="flex gap-2 w-full">
+                  <Button
+                    onClick={() => {
+                      handleRegenerateSummary(activeEntry);
+                    }}
+                    disabled={summarizingStates[activeEntry.id]}
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1 flex items-center justify-center gap-1.5"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>{t("settings.history.regenerateSummary")}</span>
+                  </Button>
+                  <Button
+                    onClick={() => setShowCustomPromptModal((v) => !v)}
+                    disabled={summarizingStates[activeEntry.id]}
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1 flex items-center justify-center gap-1.5"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span>{t("settings.history.regenerateWithPrompt")}</span>
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (summaryTexts[activeEntry.id]) {
+                        navigator.clipboard.writeText(
+                          summaryTexts[activeEntry.id]!,
                         );
+                        toast.success(t("settings.history.summaryCopied"));
                       }
                     }}
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      onClick={() => {
-                        setShowCustomPromptModal(false);
-                        setCustomPromptInput("");
-                      }}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      {t("common.cancel")}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        if (customPromptInput.trim() && activeSummaryEntry) {
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1 flex items-center justify-center gap-1.5"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{t("settings.history.copySummary")}</span>
+                  </Button>
+                </div>
+
+                {showCustomPromptModal && (
+                  <div className="flex flex-col gap-2 p-3 bg-mid-gray/5 border border-mid-gray/15 rounded-lg animate-in fade-in slide-in-from-top-2 duration-200">
+                    <label className="text-xs font-medium text-text/70">
+                      {t("settings.history.customPromptTitle")}
+                    </label>
+                    <textarea
+                      value={customPromptInput}
+                      onChange={(e) => setCustomPromptInput(e.target.value)}
+                      placeholder={t(
+                        "settings.history.customPromptPlaceholder",
+                      )}
+                      className="w-full min-h-[72px] max-h-32 resize-y rounded-md border border-mid-gray/20 bg-background px-3 py-2 text-xs text-text placeholder:text-text/30 focus:outline-none focus:ring-1 focus:ring-logo-primary/40 focus:border-logo-primary/40"
+                      onKeyDown={(e) => {
+                        if (
+                          e.key === "Enter" &&
+                          !e.shiftKey &&
+                          customPromptInput.trim()
+                        ) {
+                          e.preventDefault();
                           handleRegenerateWithCustomPrompt(
-                            activeSummaryEntry,
+                            activeEntry,
                             customPromptInput.trim(),
                           );
                         }
                       }}
-                      disabled={!customPromptInput.trim() || isSummarizing}
-                      size="sm"
-                    >
-                      {t("settings.history.customPromptSubmit")}
-                    </Button>
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        onClick={() => {
+                          setShowCustomPromptModal(false);
+                          setCustomPromptInput("");
+                        }}
+                        size="sm"
+                        variant="secondary"
+                      >
+                        {t("common.cancel")}
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (customPromptInput.trim()) {
+                            handleRegenerateWithCustomPrompt(
+                              activeEntry,
+                              customPromptInput.trim(),
+                            );
+                          }
+                        }}
+                        disabled={
+                          !customPromptInput.trim() ||
+                          summarizingStates[activeEntry.id]
+                        }
+                        size="sm"
+                      >
+                        {t("settings.history.customPromptSubmit")}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="w-full md:w-80 lg:w-96 flex-shrink-0 max-h-[calc(100vh-120px)] bg-background border border-mid-gray/20 rounded-lg p-4 sticky top-4 flex flex-col justify-center items-center text-center text-text/40 gap-2">
+            <Brain className="w-8 h-8 text-logo-primary/30" />
+            <span className="text-xs">{t("settings.history.noSummary")}</span>
+          </div>
+        ))}
 
       {/* Side-by-side Chat panel (on large screens) */}
-      {chatEntry && isLargeScreen && (
-        <div className="w-full md:w-80 lg:w-96 flex-shrink-0 max-h-[calc(100vh-120px)] bg-background border border-mid-gray/20 rounded-lg p-4 sticky top-4 flex flex-col gap-4 animate-in slide-in-from-right duration-300">
-          <ChatContent
-            entry={chatEntry}
-            onClose={() => setChatEntry(null)}
-            messages={chatHistories[chatEntry.id] || []}
-            onSendMessage={(question) =>
-              handleAskAboutTranscript(chatEntry, question)
-            }
-            isChatting={isChatting}
-            clearHistory={() => {
-              setChatHistories((prev) => ({
-                ...prev,
-                [chatEntry.id]: [],
-              }));
-            }}
-          />
-        </div>
-      )}
+      {isLargeScreen &&
+        entries.length > 0 &&
+        (activeEntry ? (
+          <div className="w-full md:w-80 lg:w-96 flex-shrink-0 max-h-[calc(100vh-120px)] bg-background border border-mid-gray/20 rounded-lg p-4 sticky top-4 flex flex-col gap-4 animate-in slide-in-from-right duration-300 chat-panel">
+            <ChatContent
+              entry={activeEntry}
+              onClose={() => setActiveEntry(null)}
+              messages={chatHistories[activeEntry.id] || []}
+              onSendMessage={(question) =>
+                handleAskAboutTranscript(activeEntry, question)
+              }
+              isChatting={chattingStates[activeEntry.id] || false}
+              clearHistory={() => {
+                setChatHistories((prev) => ({
+                  ...prev,
+                  [activeEntry.id]: [],
+                }));
+              }}
+              showCloseButton={true}
+              inputValue={chatInputs[activeEntry.id] || ""}
+              onInputChange={(val) =>
+                setChatInputs((prev) => ({
+                  ...prev,
+                  [activeEntry.id]: val,
+                }))
+              }
+            />
+          </div>
+        ) : (
+          <div className="w-full md:w-80 lg:w-96 flex-shrink-0 max-h-[calc(100vh-120px)] bg-background border border-mid-gray/20 rounded-lg p-4 sticky top-4 flex flex-col justify-center items-center text-center text-text/40 gap-2">
+            <MessageSquare className="w-8 h-8 text-logo-primary/30" />
+            <span className="text-xs">
+              {t("settings.history.noQuestionsYet")}
+            </span>
+          </div>
+        ))}
 
       {/* Overlay Chat modal (on small screens) */}
-      {chatEntry && !isLargeScreen && (
+      {mobileChatEntry && !isLargeScreen && (
         <ChatOverlayModal
-          entry={chatEntry}
-          onClose={() => setChatEntry(null)}
-          messages={chatHistories[chatEntry.id] || []}
+          entry={mobileChatEntry}
+          onClose={() => setMobileChatEntry(null)}
+          messages={chatHistories[mobileChatEntry.id] || []}
           onSendMessage={(question) =>
-            handleAskAboutTranscript(chatEntry, question)
+            handleAskAboutTranscript(mobileChatEntry, question)
           }
-          isChatting={isChatting}
+          isChatting={chattingStates[mobileChatEntry.id] || false}
           clearHistory={() => {
             setChatHistories((prev) => ({
               ...prev,
-              [chatEntry.id]: [],
+              [mobileChatEntry.id]: [],
             }));
           }}
+          inputValue={chatInputs[mobileChatEntry.id] || ""}
+          onInputChange={(val) =>
+            setChatInputs((prev) => ({
+              ...prev,
+              [mobileChatEntry.id]: val,
+            }))
+          }
         />
       )}
     </div>
@@ -764,13 +962,16 @@ interface HistoryEntryProps {
   onRegenerateSummary: () => void;
   onRegenerateWithCustomPrompt: (prompt: string) => void;
   onAskAboutTranscript: () => void;
-  isSummaryActive: boolean;
+  isActive: boolean;
+  onActivate: () => void;
+  onCollapse: () => void;
   isSummarizingThis: boolean;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
   retryTranscription: (id: number) => Promise<void>;
   showInlineSummary: boolean;
   summaryText: string | null;
+  isLargeScreen: boolean;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
@@ -781,19 +982,26 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   onRegenerateSummary,
   onRegenerateWithCustomPrompt,
   onAskAboutTranscript,
-  isSummaryActive,
+  isActive,
+  onActivate,
+  onCollapse,
   isSummarizingThis,
   getAudioUrl,
   deleteAudio,
   retryTranscription,
   showInlineSummary,
   summaryText,
+  isLargeScreen,
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
   const [retrying, setRetrying] = useState(false);
 
   const hasTranscription = entry.transcription_text.trim().length > 0;
+  const isLong =
+    entry.transcription_text.length > 300 ||
+    entry.transcription_text.split("\n").length > 4;
+  const hasAudio = entry.file_name.endsWith(".wav");
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -834,8 +1042,31 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
 
   return (
-    <div className="px-4 py-2 pb-5 flex flex-col gap-3">
-      <div className="flex justify-between items-center">
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        if (isActive) {
+          onCollapse();
+        } else {
+          onActivate();
+        }
+      }}
+      className={`bg-background border border-mid-gray/20 rounded-lg shadow-sm p-4 flex flex-col gap-3 transition-all duration-300 relative hover:shadow-[0_0_15px_color-mix(in_srgb,var(--color-logo-primary)_15%,transparent)] hover:border-logo-primary/45 cursor-pointer history-card`}
+    >
+      {isActive && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onCollapse();
+          }}
+          className="absolute left-0 top-0 bottom-0 w-1 bg-logo-primary rounded-l-lg cursor-pointer hover:w-2 transition-all duration-200"
+          title={t("settings.history.showLess")}
+        />
+      )}
+      <div
+        className="flex justify-between items-center"
+        onClick={(e) => e.stopPropagation()}
+      >
         <p className="text-sm font-medium">{formattedDate}</p>
         <div className="flex items-center">
           <IconButton
@@ -852,7 +1083,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           <IconButton
             onClick={onShowSummary}
             disabled={!hasTranscription || retrying}
-            active={isSummaryActive}
+            active={isActive}
             title={t("settings.history.summarize")}
           >
             <Sparkles
@@ -863,13 +1094,16 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
               }
             />
           </IconButton>
-          <IconButton
-            onClick={onAskAboutTranscript}
-            disabled={!hasTranscription || retrying}
-            title={t("settings.history.askAboutTranscript")}
-          >
-            <MessageSquare width={16} height={16} />
-          </IconButton>
+          {!isLargeScreen && (
+            <IconButton
+              onClick={onAskAboutTranscript}
+              disabled={!hasTranscription || retrying}
+              active={isActive}
+              title={t("settings.history.askAboutTranscript")}
+            >
+              <MessageSquare width={16} height={16} />
+            </IconButton>
+          )}
           <IconButton
             onClick={onToggleSaved}
             disabled={retrying}
@@ -886,21 +1120,23 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
               fill={entry.saved ? "currentColor" : "none"}
             />
           </IconButton>
-          <IconButton
-            onClick={handleRetranscribe}
-            disabled={retrying}
-            title={t("settings.history.retranscribe")}
-          >
-            <RotateCcw
-              width={16}
-              height={16}
-              style={
-                retrying
-                  ? { animation: "spin 1s linear infinite reverse" }
-                  : undefined
-              }
-            />
-          </IconButton>
+          {hasAudio && (
+            <IconButton
+              onClick={handleRetranscribe}
+              disabled={retrying}
+              title={t("settings.history.retranscribe")}
+            >
+              <RotateCcw
+                width={16}
+                height={16}
+                style={
+                  retrying
+                    ? { animation: "spin 1s linear infinite reverse" }
+                    : undefined
+                }
+              />
+            </IconButton>
+          )}
           <IconButton
             onClick={handleDeleteEntry}
             disabled={retrying}
@@ -912,13 +1148,18 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       </div>
 
       <p
+        onClick={(e) => {
+          if (isActive) {
+            e.stopPropagation();
+          }
+        }}
         className={`italic text-sm pb-2 ${
           retrying
             ? ""
             : hasTranscription
               ? "text-text/90 select-text cursor-text whitespace-pre-wrap break-words"
               : "text-text/40"
-        }`}
+        } ${isLong && !isActive ? "line-clamp-4" : ""}`}
         style={
           retrying
             ? { animation: "transcribe-pulse 3s ease-in-out infinite" }
@@ -940,10 +1181,35 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             : t("settings.history.transcriptionFailed")}
       </p>
 
-      <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
+      {hasTranscription && isLong && !retrying && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isActive) {
+              onCollapse();
+            } else {
+              onActivate();
+            }
+          }}
+          className="text-xs font-semibold text-logo-primary hover:text-logo-primary/80 transition-colors cursor-pointer self-start -mt-2 pb-2"
+        >
+          {isActive
+            ? t("settings.history.showLess")
+            : t("settings.history.showMore")}
+        </button>
+      )}
 
-      {showInlineSummary && isSummaryActive && (
-        <div className="mt-3 bg-mid-gray/5 border border-mid-gray/10 rounded-lg p-3 flex flex-col gap-3">
+      {hasAudio && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
+        </div>
+      )}
+
+      {showInlineSummary && isActive && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="mt-3 bg-mid-gray/5 border border-mid-gray/10 rounded-lg p-3 flex flex-col gap-3"
+        >
           <div className="flex justify-between items-center pb-1.5 border-b border-mid-gray/10">
             <div className="flex items-center gap-1.5">
               <Brain className="w-3.5 h-3.5 text-logo-primary" />
@@ -1088,6 +1354,9 @@ interface ChatContentProps {
   isChatting: boolean;
   clearHistory: () => void;
   isOverlay?: boolean;
+  showCloseButton?: boolean;
+  inputValue: string;
+  onInputChange: (val: string) => void;
 }
 
 const ChatContent: React.FC<ChatContentProps> = ({
@@ -1098,9 +1367,11 @@ const ChatContent: React.FC<ChatContentProps> = ({
   isChatting,
   clearHistory,
   isOverlay = false,
+  showCloseButton = true,
+  inputValue,
+  onInputChange,
 }) => {
   const { t, i18n } = useTranslation();
-  const [input, setInput] = useState("");
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll chat to bottom when new messages arrive
@@ -1124,9 +1395,9 @@ const ChatContent: React.FC<ChatContentProps> = ({
   }, [onClose, isOverlay]);
 
   const handleSend = () => {
-    if (input.trim() && !isChatting) {
-      onSendMessage(input.trim());
-      setInput("");
+    if (inputValue.trim() && !isChatting) {
+      onSendMessage(inputValue.trim());
+      onInputChange("");
     }
   };
 
@@ -1156,14 +1427,16 @@ const ChatContent: React.FC<ChatContentProps> = ({
               {t("settings.history.clearHistory")}
             </button>
           )}
-          <button
-            onClick={onClose}
-            className="text-text/50 hover:text-text cursor-pointer px-2 py-1 rounded hover:bg-mid-gray/10 transition-colors flex items-center gap-1 text-xs"
-            title={t("common.close")}
-          >
-            <X className="w-3.5 h-3.5" />
-            <span>{t("common.close")}</span>
-          </button>
+          {showCloseButton && (
+            <button
+              onClick={onClose}
+              className="text-text/50 hover:text-text cursor-pointer px-2 py-1 rounded hover:bg-mid-gray/10 transition-colors flex items-center gap-1 text-xs"
+              title={t("common.close")}
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>{t("common.close")}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1225,8 +1498,8 @@ const ChatContent: React.FC<ChatContentProps> = ({
       <div className="pt-3 border-t border-mid-gray/10 bg-transparent flex gap-2 items-center flex-shrink-0">
         <input
           type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
+          value={inputValue}
+          onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -1240,7 +1513,7 @@ const ChatContent: React.FC<ChatContentProps> = ({
         />
         <button
           onClick={handleSend}
-          disabled={!input.trim() || isChatting}
+          disabled={!inputValue.trim() || isChatting}
           className="rounded-md bg-logo-primary text-white p-2 hover:bg-logo-primary/90 disabled:opacity-40 disabled:hover:bg-logo-primary transition-all flex items-center justify-center shadow-md cursor-pointer disabled:cursor-not-allowed"
         >
           <Send className="w-3.5 h-3.5" />
@@ -1258,6 +1531,8 @@ const ChatOverlayModal: React.FC<{
   onSendMessage: (question: string) => void;
   isChatting: boolean;
   clearHistory: () => void;
+  inputValue: string;
+  onInputChange: (val: string) => void;
 }> = ({
   entry,
   onClose,
@@ -1265,6 +1540,8 @@ const ChatOverlayModal: React.FC<{
   onSendMessage,
   isChatting,
   clearHistory,
+  inputValue,
+  onInputChange,
 }) => {
   return (
     <div
@@ -1285,6 +1562,8 @@ const ChatOverlayModal: React.FC<{
           isChatting={isChatting}
           clearHistory={clearHistory}
           isOverlay={true}
+          inputValue={inputValue}
+          onInputChange={onInputChange}
         />
       </div>
     </div>

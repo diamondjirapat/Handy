@@ -129,24 +129,30 @@ pub async fn upload_multiple_audio_files(
     let total_files = file_paths.len();
 
     // Load model in background
-    let _ = app.emit("upload-progress", UploadProgressPayload {
-        status: "loading_model".to_string(),
-        current_file: None,
-        index: 0,
-        total: total_files,
-    });
+    let _ = app.emit(
+        "upload-progress",
+        UploadProgressPayload {
+            status: "loading_model".to_string(),
+            current_file: None,
+            index: 0,
+            total: total_files,
+        },
+    );
     transcription_manager.initiate_model_load();
 
     if combine {
         // Read and concatenate all samples
         let mut all_samples = Vec::new();
         for (i, path) in file_paths.iter().enumerate() {
-            let _ = app.emit("upload-progress", UploadProgressPayload {
-                status: "reading".to_string(),
-                current_file: Some(get_filename(path)),
-                index: i + 1,
-                total: total_files,
-            });
+            let _ = app.emit(
+                "upload-progress",
+                UploadProgressPayload {
+                    status: "reading".to_string(),
+                    current_file: Some(get_filename(path)),
+                    index: i + 1,
+                    total: total_files,
+                },
+            );
             let samples = read_audio_file(path)
                 .map_err(|e| format!("Failed to read audio file '{}': {}", path, e))?;
             all_samples.extend(samples);
@@ -157,25 +163,34 @@ pub async fn upload_multiple_audio_files(
         }
 
         // Save combined WAV file to recordings dir
-        let _ = app.emit("upload-progress", UploadProgressPayload {
-            status: "saving".to_string(),
-            current_file: None,
-            index: 0,
-            total: total_files,
-        });
-        let file_name = format!("upload-combined-{}.wav", chrono::Utc::now().timestamp_millis());
+        let _ = app.emit(
+            "upload-progress",
+            UploadProgressPayload {
+                status: "saving".to_string(),
+                current_file: None,
+                index: 0,
+                total: total_files,
+            },
+        );
+        let file_name = format!(
+            "upload-combined-{}.wav",
+            chrono::Utc::now().timestamp_millis()
+        );
         let wav_path = history_manager.recordings_dir().join(&file_name);
         if let Err(e) = crate::audio_toolkit::save_wav_file(&wav_path, &all_samples) {
             log::warn!("Failed to save combined audio as WAV: {}", e);
         }
 
         // Transcribe (blocking)
-        let _ = app.emit("upload-progress", UploadProgressPayload {
-            status: "transcribing".to_string(),
-            current_file: None,
-            index: 0,
-            total: total_files,
-        });
+        let _ = app.emit(
+            "upload-progress",
+            UploadProgressPayload {
+                status: "transcribing".to_string(),
+                current_file: None,
+                index: 0,
+                total: total_files,
+            },
+        );
         let transcription = tauri::async_runtime::spawn_blocking({
             let tm = Arc::clone(&transcription_manager);
             move || tm.transcribe(all_samples)
@@ -185,21 +200,27 @@ pub async fn upload_multiple_audio_files(
         .map_err(|e| e.to_string())?;
 
         // Post-process if enabled
-        let _ = app.emit("upload-progress", UploadProgressPayload {
-            status: "post_processing".to_string(),
-            current_file: None,
-            index: 0,
-            total: total_files,
-        });
+        let _ = app.emit(
+            "upload-progress",
+            UploadProgressPayload {
+                status: "post_processing".to_string(),
+                current_file: None,
+                index: 0,
+                total: total_files,
+            },
+        );
         let processed = process_transcription_output(&app, &transcription, true).await;
 
         // Save to history
-        let _ = app.emit("upload-progress", UploadProgressPayload {
-            status: "saving".to_string(),
-            current_file: None,
-            index: 0,
-            total: total_files,
-        });
+        let _ = app.emit(
+            "upload-progress",
+            UploadProgressPayload {
+                status: "saving".to_string(),
+                current_file: None,
+                index: 0,
+                total: total_files,
+            },
+        );
         history_manager
             .save_entry(
                 file_name,
@@ -215,12 +236,15 @@ pub async fn upload_multiple_audio_files(
             log::warn!("Failed to copy to clipboard: {}", e);
         }
 
-        let _ = app.emit("upload-progress", UploadProgressPayload {
-            status: "done".to_string(),
-            current_file: None,
-            index: 0,
-            total: total_files,
-        });
+        let _ = app.emit(
+            "upload-progress",
+            UploadProgressPayload {
+                status: "done".to_string(),
+                current_file: None,
+                index: 0,
+                total: total_files,
+            },
+        );
 
         Ok(UploadMultipleAudioResult {
             transcriptions: vec![processed.final_text],
@@ -228,36 +252,45 @@ pub async fn upload_multiple_audio_files(
     } else {
         let mut transcriptions = Vec::new();
         for (i, path) in file_paths.iter().enumerate() {
-            let _ = app.emit("upload-progress", UploadProgressPayload {
-                status: "reading".to_string(),
-                current_file: Some(get_filename(path)),
-                index: i + 1,
-                total: total_files,
-            });
+            let _ = app.emit(
+                "upload-progress",
+                UploadProgressPayload {
+                    status: "reading".to_string(),
+                    current_file: Some(get_filename(path)),
+                    index: i + 1,
+                    total: total_files,
+                },
+            );
             let samples = read_audio_file(path)
                 .map_err(|e| format!("Failed to read audio file '{}': {}", path, e))?;
             if samples.is_empty() {
                 continue;
             }
 
-            let _ = app.emit("upload-progress", UploadProgressPayload {
-                status: "saving".to_string(),
-                current_file: Some(get_filename(path)),
-                index: i + 1,
-                total: total_files,
-            });
+            let _ = app.emit(
+                "upload-progress",
+                UploadProgressPayload {
+                    status: "saving".to_string(),
+                    current_file: Some(get_filename(path)),
+                    index: i + 1,
+                    total: total_files,
+                },
+            );
             let file_name = format!("upload-{}.wav", chrono::Utc::now().timestamp_millis());
             let wav_path = history_manager.recordings_dir().join(&file_name);
             if let Err(e) = crate::audio_toolkit::save_wav_file(&wav_path, &samples) {
                 log::warn!("Failed to save uploaded audio as WAV: {}", e);
             }
 
-            let _ = app.emit("upload-progress", UploadProgressPayload {
-                status: "transcribing".to_string(),
-                current_file: Some(get_filename(path)),
-                index: i + 1,
-                total: total_files,
-            });
+            let _ = app.emit(
+                "upload-progress",
+                UploadProgressPayload {
+                    status: "transcribing".to_string(),
+                    current_file: Some(get_filename(path)),
+                    index: i + 1,
+                    total: total_files,
+                },
+            );
             let transcription = tauri::async_runtime::spawn_blocking({
                 let tm = Arc::clone(&transcription_manager);
                 let s = samples.clone();
@@ -267,20 +300,26 @@ pub async fn upload_multiple_audio_files(
             .map_err(|e| format!("Transcription task panicked: {}", e))?
             .map_err(|e| e.to_string())?;
 
-            let _ = app.emit("upload-progress", UploadProgressPayload {
-                status: "post_processing".to_string(),
-                current_file: Some(get_filename(path)),
-                index: i + 1,
-                total: total_files,
-            });
+            let _ = app.emit(
+                "upload-progress",
+                UploadProgressPayload {
+                    status: "post_processing".to_string(),
+                    current_file: Some(get_filename(path)),
+                    index: i + 1,
+                    total: total_files,
+                },
+            );
             let processed = process_transcription_output(&app, &transcription, true).await;
 
-            let _ = app.emit("upload-progress", UploadProgressPayload {
-                status: "saving".to_string(),
-                current_file: Some(get_filename(path)),
-                index: i + 1,
-                total: total_files,
-            });
+            let _ = app.emit(
+                "upload-progress",
+                UploadProgressPayload {
+                    status: "saving".to_string(),
+                    current_file: Some(get_filename(path)),
+                    index: i + 1,
+                    total: total_files,
+                },
+            );
             history_manager
                 .save_entry(
                     file_name,
@@ -302,14 +341,16 @@ pub async fn upload_multiple_audio_files(
             }
         }
 
-        let _ = app.emit("upload-progress", UploadProgressPayload {
-            status: "done".to_string(),
-            current_file: None,
-            index: 0,
-            total: total_files,
-        });
+        let _ = app.emit(
+            "upload-progress",
+            UploadProgressPayload {
+                status: "done".to_string(),
+                current_file: None,
+                index: 0,
+                total: total_files,
+            },
+        );
 
         Ok(UploadMultipleAudioResult { transcriptions })
     }
 }
-

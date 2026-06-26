@@ -17,7 +17,7 @@
     "models": "Models",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
-    "history": "History",
+    "history": "Transcripts",
     "summary": "AI Summary",
     "debug": "Debug",
     "about": "About"
@@ -453,10 +453,18 @@
       }
     },
     "history": {
-      "title": "History",
+      "title": "Transcripts",
       "openFolder": "Open Recordings Folder",
       "loading": "Loading history...",
       "empty": "No transcriptions yet. Start recording to build your history!",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "importTranscript": "Import Transcript",
+      "importTranscriptDialogTitle": "Select Transcript Text File",
+      "importEmptyError": "Selected text file is empty",
+      "importSuccess": "Transcript imported successfully",
+      "importError": "Failed to import transcript",
+      "clickToCollapse": "Click to collapse",
       "copyToClipboard": "Copy transcription to clipboard",
       "save": "Save transcription",
       "unsave": "Remove from saved",
@@ -546,7 +554,9 @@
       "historyLimit": {
         "title": "History Limit",
         "description": "Maximum number of history entries to keep",
-        "entries": "entries"
+        "entries": "entries",
+        "noLimit": "No Limit",
+        "custom": "Custom"
       },
       "recordingRetention": {
         "title": "Auto-Delete Recordings",

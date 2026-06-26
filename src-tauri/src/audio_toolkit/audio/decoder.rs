@@ -3,7 +3,7 @@ use log::debug;
 use rubato::{FftFixedIn, Resampler};
 use std::fs::File;
 use std::path::Path;
-use symphonia::core::audio::AudioBufferRef;
+use symphonia::core::audio::{AudioBufferRef, Signal};
 use symphonia::core::codecs::DecoderOptions;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
@@ -86,31 +86,48 @@ pub fn read_audio_file<P: AsRef<Path>>(file_path: P) -> Result<Vec<f32>> {
             }
         }
 
+        macro_rules! decode_to_mono {
+            ($b:expr, $v:ident, $conv_expr:expr) => {{
+                let num_channels = $b.spec().channels.count();
+                let num_frames = $b.frames();
+                if num_channels > 1 {
+                    let planes_ref = $b.planes();
+                    let planes = planes_ref.planes();
+                    for i in 0..num_frames {
+                        let mut sum = 0.0;
+                        for ch in 0..num_channels {
+                            let $v = planes[ch][i];
+                            sum += $conv_expr;
+                        }
+                        all_samples.push(sum / num_channels as f32);
+                    }
+                } else {
+                    let planes_ref = $b.planes();
+                    for ch in planes_ref.planes() {
+                        for &sample in ch.iter() {
+                            let $v = sample;
+                            all_samples.push($conv_expr);
+                        }
+                    }
+                }
+            }};
+        }
+
         match decoded {
             AudioBufferRef::F32(b) => {
-                for ch in b.planes().planes() {
-                    all_samples.extend_from_slice(ch);
-                }
+                decode_to_mono!(b, v, v);
             }
             AudioBufferRef::S16(b) => {
-                for ch in b.planes().planes() {
-                    all_samples.extend(ch.iter().map(|&v| v as f32 / i16::MAX as f32));
-                }
+                decode_to_mono!(b, v, v as f32 / i16::MAX as f32);
             }
             AudioBufferRef::U16(b) => {
-                for ch in b.planes().planes() {
-                    all_samples.extend(ch.iter().map(|&v| (v as f32 - 32768.0) / 32768.0));
-                }
+                decode_to_mono!(b, v, (v as f32 - 32768.0) / 32768.0);
             }
             AudioBufferRef::S8(b) => {
-                for ch in b.planes().planes() {
-                    all_samples.extend(ch.iter().map(|&v| v as f32 / 128.0));
-                }
+                decode_to_mono!(b, v, v as f32 / 128.0);
             }
             AudioBufferRef::U8(b) => {
-                for ch in b.planes().planes() {
-                    all_samples.extend(ch.iter().map(|&v| (v as f32 - 128.0) / 128.0));
-                }
+                decode_to_mono!(b, v, (v as f32 - 128.0) / 128.0);
             }
             _ => {
                 debug!("Unsupported audio buffer reference type");
@@ -119,21 +136,7 @@ pub fn read_audio_file<P: AsRef<Path>>(file_path: P) -> Result<Vec<f32>> {
     }
 
     let src_sr = src_sr.ok_or_else(|| anyhow!("Sample rate not defined"))?;
-    let src_channels = src_channels.ok_or_else(|| anyhow!("Channels not defined"))?;
-
-    // De-interleave channels → mono (each channel's samples are stored contiguously)
-    if src_channels > 1 && !all_samples.is_empty() {
-        let samples_per_channel = all_samples.len() / src_channels as usize;
-        let mut mono: Vec<f32> = Vec::with_capacity(samples_per_channel);
-        for i in 0..samples_per_channel {
-            let mut sum = 0.0f32;
-            for c in 0..src_channels {
-                sum += all_samples[i + c as usize * samples_per_channel];
-            }
-            mono.push(sum / src_channels as f32);
-        }
-        all_samples = mono;
-    }
+    let _src_channels = src_channels.ok_or_else(|| anyhow!("Channels not defined"))?;
 
     // Resample to 16kHz if needed
     if src_sr != TARGET_SAMPLE_RATE {

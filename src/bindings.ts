@@ -865,6 +865,14 @@ async retryHistoryEntryTranscription(id: number) : Promise<Result<null, string>>
     else return { status: "error", error: e  as any };
 }
 },
+async importTranscriptionText(text: string) : Promise<Result<HistoryEntry, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("import_transcription_text", { text }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async uploadAudioFile(filePath: string) : Promise<Result<UploadAudioResult, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("upload_audio_file", { filePath }) };
